@@ -17,6 +17,6 @@ export const appRoutes = [
   { path: "/vendors", title: "Vendors", icon: Store, element: <VendorsPage /> },
   { path: "/orders", title: "Orders", icon: ClipboardList, element: <OrdersPage /> },
   { path: "/cli", title: "CLI", icon: TerminalIcon, element: <CLIPage /> },
-  { path: "/activity", title: "Activity", icon: Activity, element: <AdminPasskeyGate storageKey="activity"><ActivityPage /></AdminPasskeyGate> },
+  { path: "/activity", title: "Activity", icon: Activity, element: <AdminPasskeyGate storageKey="activity"><ActivityPage /></AdminPasskeyGate>, adminOnly: true },
   { path: "/table-editor", title: "Table Editor", icon: Database, element: <AdminPasskeyGate storageKey="table-editor"><TableEditorPage /></AdminPasskeyGate>, adminOnly: true },
 ];
