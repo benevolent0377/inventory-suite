@@ -4,6 +4,16 @@ import { Boxes } from "lucide-react";
 import "./Sidebar.css";
 
 export function Sidebar() {
+  const isAdmin = (() => {
+    try {
+      return JSON.parse(localStorage.getItem("inventory-user") || "null")?.is_admin === true;
+    } catch {
+      return false;
+    }
+  })();
+
+  const visibleRoutes = appRoutes.filter((route) => !route.adminOnly || isAdmin);
+
   return (
     <aside className="sidebar">
       <div className="logo-container">
@@ -16,7 +26,7 @@ export function Sidebar() {
       <div className="sidebar-divider" />
 
       <nav className="sidebar-items">
-        {appRoutes.map((route) => {
+        {visibleRoutes.map((route) => {
           const Icon = route.icon;
           return (
             <NavLink
@@ -26,7 +36,7 @@ export function Sidebar() {
                 isActive ? "sidebar-item active" : "sidebar-item"
               }
             >
-              <Icon size={18} />
+              <Icon size={22} />
               <span>{route.title}</span>
             </NavLink>
           );

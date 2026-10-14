@@ -24,6 +24,7 @@ function App() {
       const navigation = performance.getEntriesByType("navigation")[0];
       if (navigation && navigation.type === "reload") return;
       localStorage.removeItem("inventory-user");
+      localStorage.removeItem("inventory-token");
     }
     window.addEventListener("beforeunload", handleBeforeUnload);
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);

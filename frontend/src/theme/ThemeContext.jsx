@@ -3,16 +3,27 @@ import { request } from "../api/client";
 
 export const ThemeContext = createContext(null);
 
+function readActiveName() {
+  const stored = localStorage.getItem("inventory-user");
+  if (!stored) return "";
+  try {
+    const parsed = JSON.parse(stored);
+    return parsed?.name || parsed?.username || (typeof parsed === "string" ? parsed : "");
+  } catch {
+    return stored;
+  }
+}
+
 export function ThemeProvider({ children }) {
-  const [theme, setThemeState] = useState(() => localStorage.getItem("inventory-theme") || "light");
+  const [theme, setThemeState] = useState(() => localStorage.getItem("inventory-theme") || "dark");
   const [textSize, setTextSize] = useState(() => Number(localStorage.getItem("inventory-text-size")) || 100);
 
   const applyUserTheme = useCallback(async () => {
-    const activeName = localStorage.getItem("inventory-user");
+    const activeName = readActiveName();
     if (!activeName) return;
     try {
       const users = await request("/api/users");
-      const currentUser = users.find((user) => user.name === activeName);
+      const currentUser = users.find((user) => user.name === activeName || user.username === activeName);
       if (currentUser?.theme) {
         setThemeState(currentUser.theme);
         localStorage.setItem("inventory-theme", currentUser.theme);
@@ -32,12 +43,12 @@ export function ThemeProvider({ children }) {
     setThemeState(nextTheme);
     localStorage.setItem("inventory-theme", nextTheme);
 
-    const activeName = localStorage.getItem("inventory-user");
+    const activeName = readActiveName();
     if (!activeName) return;
 
     request("/api/users")
       .then((users) => {
-        const currentUser = users.find((user) => user.name === activeName);
+        const currentUser = users.find((user) => user.name === activeName || user.username === activeName);
         if (!currentUser) return null;
         return request(`/api/users/${currentUser.id}`, {
           method: "PUT",

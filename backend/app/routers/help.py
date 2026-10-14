@@ -1,6 +1,7 @@
 import io
 
 from fastapi import APIRouter
+from fastapi.responses import JSONResponse
 
 from ..cli import build_parser
 
@@ -12,4 +13,4 @@ def help_text():
     parser = build_parser()
     buffer = io.StringIO()
     parser.print_help(buffer)
-    return {"help": buffer.getvalue()}
+    return JSONResponse({"help": buffer.getvalue()})

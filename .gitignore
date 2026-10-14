@@ -147,3 +147,11 @@ vite.config.ts.timestamp-*
 
 # Turbo Repo
 .turbo
+
+# Local runtime database and backups
+backend/data/inventory.db
+backend/data/inventory.db-*
+backend/data/backups/
+backend/data/certs/*.pem
+backend/data/certs/*.key
+backend/data/certs/openssl.cnf

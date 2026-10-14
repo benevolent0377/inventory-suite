@@ -30,7 +30,7 @@ def product_to_dict(product: models.Product, db: Session):
 def search(q: str = Query(default=""), db: Session = Depends(get_db)):
     query = unquote(q).strip()
     if not query:
-        return {"query": query, "products": [], "vendors": [], "orders": [], "movements": []}
+        return {"query": query, "products": [], "vendors": [], "orders": [], "movements": [], "logistics": []}
 
     like = f"%{query}%"
 
@@ -93,6 +93,41 @@ def search(q: str = Query(default=""), db: Session = Depends(get_db)):
             "created_at": movement.created_at,
         })
 
+    on_hand_by_product = {}
+    for row in db.query(models.Stock).all():
+        on_hand_by_product[row.product_id] = on_hand_by_product.get(row.product_id, 0) + row.on_hand
+
+    logistics_results = []
+    for product in db.query(models.Product).all():
+        on_hand = on_hand_by_product.get(product.id, 0.0)
+        required = product.required_backstock or 0
+        shortage = max(required - on_hand, 0)
+        if required <= 0:
+            urgency = "not_tracked"
+        elif on_hand <= 0:
+            urgency = "out_of_stock"
+        elif shortage >= max(1, required * 0.5):
+            urgency = "critical"
+        elif shortage > 0:
+            urgency = "low"
+        else:
+            urgency = "healthy"
+        vendor = db.get(models.Vendor, product.vendor_id) if product.vendor_id else None
+        logistics_item = {
+            "product_id": product.id,
+            "sku": product.sku,
+            "name": product.name,
+            "vendor": vendor.name if vendor else None,
+            "on_hand": on_hand,
+            "required_backstock": required,
+            "shortage": shortage,
+            "urgency": urgency,
+            "order_quantity": shortage,
+        }
+        values = " ".join(str(v) for v in logistics_item.values() if v is not None).lower()
+        if query.lower() in values:
+            logistics_results.append(logistics_item)
+
     return {
         "query": query,
         "products": [product_to_dict(product, db) for product in products],
@@ -110,4 +145,5 @@ def search(q: str = Query(default=""), db: Session = Depends(get_db)):
         ],
         "orders": order_results,
         "movements": movements,
+        "logistics": logistics_results,
     }

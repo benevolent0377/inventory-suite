@@ -2,32 +2,33 @@ import { useEffect, useState } from "react";
 import { request } from "../../api/client";
 
 export default function UserPicker() {
-  const [users, setUsers] = useState([]);
-  const [selected, setSelected] = useState(localStorage.getItem("inventory-user") || "");
+  const [profile, setProfile] = useState(null);
 
   useEffect(() => {
-    const sync = () => setSelected(localStorage.getItem("inventory-user") || "");
+    const stored = localStorage.getItem("inventory-user");
+    if (stored) {
+      try { setProfile(JSON.parse(stored)); } catch { setProfile({ username: stored, name: stored }); }
+    }
+    const sync = async () => {
+      if (!localStorage.getItem("inventory-token")) { setProfile(null); return; }
+      try {
+        const user = await request("/api/auth/me");
+        setProfile(user);
+        localStorage.setItem("inventory-user", JSON.stringify(user));
+      } catch {
+        setProfile(null);
+      }
+    };
     sync();
-    const handler = (event) => setSelected(event.detail || localStorage.getItem("inventory-user") || "");
-    window.addEventListener("inventory-user-changed", handler);
-    request("/api/users").then(setUsers).catch(() => setUsers([]));
-    return () => window.removeEventListener("inventory-user-changed", handler);
+    const handler = () => sync();
+    window.addEventListener("inventory-user-logged-in", handler);
+    return () => window.removeEventListener("inventory-user-logged-in", handler);
   }, []);
 
-  useEffect(() => {
-    localStorage.setItem("inventory-user", selected);
-  }, [selected]);
-
+  if (!profile) return <div className="user-picker">Not logged in</div>;
   return (
     <div className="user-picker">
-      <select value={selected} onChange={(event) => setSelected(event.target.value)} aria-label="Select user">
-        <option value="">User</option>
-        {users.map((user) => (
-          <option key={user.id} value={user.name}>
-            {user.name}
-          </option>
-        ))}
-      </select>
+      <span>{profile.name || profile.username}{profile.is_admin ? " (admin)" : ""}</span>
     </div>
   );
 }

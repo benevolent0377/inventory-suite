@@ -84,7 +84,7 @@
 .sidebar-item {
   display: flex;
   align-items: center;
-  gap: 9px;
+  gap: 12px;
   padding: 8px 10px;
   border-radius: var(--radius);
   text-decoration: none;

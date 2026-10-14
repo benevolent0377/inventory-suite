@@ -3,9 +3,10 @@ import json
 from datetime import datetime
 
 from . import models
-from .db import Base, SessionLocal, engine
+from .db import Base, SessionLocal, engine, ensure_schema
 
 Base.metadata.create_all(bind=engine)
+ensure_schema()
 
 
 def session():
@@ -401,6 +402,11 @@ def build_parser():
     logs = sub.add_parser("logistics")
     logs.set_defaults(func=cmd_logistics)
 
+    clear = sub.add_parser("clear", help="Clear rows from specified tables")
+    clear.add_argument("tables", nargs="+", help="Table names or 'all'")
+    clear.add_argument("--yes", action="store_true", help="Confirm destructive clear")
+    clear.set_defaults(func=cmd_clear)
+
     help_parser = sub.add_parser("help", help="Show command help")
     help_parser.add_argument("topic", nargs="?")
     help_parser.set_defaults(func=cmd_help)
@@ -450,6 +456,58 @@ def main():
     if args.command == "orders" and args.action == "checkin":
         args.value = args.value  # store_true, default False means checkbox off? ensure toggle
     args.func(args)
+
+
+
+
+TABLE_ALIASES = {
+    "items": "products",
+    "item": "products",
+    "products": "products",
+    "product": "products",
+    "vendors": "vendors",
+    "vendor": "vendors",
+    "stock": "stock",
+    "movements": "movements",
+    "movement": "movements",
+    "orders": "orders",
+    "order": "orders",
+    "order-items": "order_items",
+    "order_items": "order_items",
+    "orderitems": "order_items",
+    "users": "users",
+    "user": "users",
+}
+
+
+def cmd_clear(args):
+    if not args.yes:
+        raise SystemExit("Pass --yes to confirm clearing table data")
+    if any(item.lower() == "all" for item in args.tables):
+        tables = ["users", "movements", "order_items", "orders", "stock", "products", "vendors"]
+    else:
+        tables = []
+        for item in args.tables:
+            table = TABLE_ALIASES.get(item.lower())
+            if table is None:
+                raise SystemExit("Unknown table: " + item)
+            if table not in tables:
+                tables.append(table)
+
+    from sqlalchemy import text
+
+    with engine.begin() as connection:
+        connection.execute(text("PRAGMA foreign_keys=OFF"))
+        for table in tables:
+            connection.execute(text(f"DELETE FROM {table}"))
+        connection.execute(text("PRAGMA foreign_keys=ON"))
+        try:
+            connection.execute(
+                text("DELETE FROM sqlite_sequence WHERE name IN (" + ", ".join("'" + table + "'" for table in tables) + ")")
+            )
+        except Exception:
+            pass
+    print("Cleared: " + ", ".join(tables))
 
 
 if __name__ == "__main__":

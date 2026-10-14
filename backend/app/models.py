@@ -40,7 +40,10 @@ class User(Base):
     name = Column(String, nullable=False)
     username = Column(String, unique=True, index=True, nullable=False)
     email = Column(String, default="")
-    theme = Column(String, default="light")
+    theme = Column(String, default="dark")
+    passkey_hash = Column(String, nullable=True)
+    passkey_updated_at = Column(DateTime, nullable=True)
+    is_admin = Column(Boolean, default=False, nullable=False)
     created_at = Column(DateTime, server_default=func.now())
 
 
@@ -92,3 +95,30 @@ class OrderItem(Base):
     expected_arrival_date = Column(DateTime, nullable=True)
     checked_in = Column(Boolean, default=False)
     unit_cost = Column(Float, default=0)
+
+
+class UserSession(Base):
+    __tablename__ = "user_sessions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    token_hash = Column(String, nullable=False, unique=True, index=True)
+    created_at = Column(DateTime, server_default=func.now())
+    expires_at = Column(DateTime, nullable=False, index=True)
+    client_host = Column(String, default="")
+
+
+class ActivityLog(Base):
+    __tablename__ = "activity_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
+    username = Column(String, default="anonymous", index=True)
+    action = Column(String, nullable=False, index=True)
+    entity_type = Column(String, default="", index=True)
+    entity_id = Column(Integer, nullable=True, index=True)
+    detail = Column(String, default="")
+    status = Column(String, default="success", index=True)
+    error = Column(String, default="")
+    client_host = Column(String, default="")
+    created_at = Column(DateTime, server_default=func.now(), index=True)

@@ -32,9 +32,15 @@ export default function DashboardPage() {
         });
         setOrders(orderData);
         setLogistics(logisticsData);
-        const selectedName = localStorage.getItem("inventory-user") || "";
-        const currentUser = users.find((user) => user.name === selectedName);
-        setActiveUser(currentUser?.username || selectedName || "there");
+        let selectedName = "";
+        try {
+          const storedUser = JSON.parse(localStorage.getItem("inventory-user") || "null");
+          selectedName = storedUser?.name || storedUser?.username || (typeof storedUser === "string" ? storedUser : "");
+        } catch {
+          selectedName = localStorage.getItem("inventory-user") || "";
+        }
+        const currentUser = users.find((user) => user.name === selectedName || user.username === selectedName);
+        setActiveUser(currentUser?.name || currentUser?.username || selectedName || "there");
         const now = new Date();
         const orderCostMonth = orderData.reduce((sum, order) => {
           const date = new Date(order.order_date || order.created_at);

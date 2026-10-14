@@ -47,13 +47,14 @@ class UserCreate(BaseModel):
     name: str
     username: str
     email: str = ""
-    theme: str = "light"
+    theme: str = "dark"
 
 
 class UserRead(UserCreate):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
+    is_admin: bool = False
     created_at: Optional[datetime] = None
 
 

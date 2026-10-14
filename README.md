@@ -21,10 +21,10 @@ cd backend
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-uvicorn app.main:app --reload
+npm run backend  # from frontend/ creates/uses the TLS certificate and prints the admin passkey
 ```
 
-Frontend:
+Frontend development:
 
 ```bash
 cd frontend
@@ -32,5 +32,14 @@ npm install
 npm run dev
 ```
 
-The frontend uses `/api` routes and is configured for Vite's dev proxy. SQLite stores data at `backend/data/inventory.db`.
+Production LAN build:
+
+```bash
+cd frontend
+npm run build
+```
+
+Then run the backend. Clients should open `https://<host-ip>:8000`. The first backend run prints a temporary admin passkey and TLS certificate fingerprint. All other users self-register; activity logs are admin-only.
+
+The frontend uses `/api` routes and is configured for Vite's dev proxy in development. SQLite stores data at `backend/data/inventory.db`, and writes are protected by per-request sessions, WAL mode, and a 30 second busy timeout.
 EOF

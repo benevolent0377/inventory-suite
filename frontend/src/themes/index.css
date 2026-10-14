@@ -1105,3 +1105,33 @@ textarea:focus {
   align-items: center;
   gap: 6px;
 }
+
+
+.content-wrapper {
+  position: relative;
+}
+
+.admin-passkey-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 9999;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(6px);
+}
+
+.admin-passkey-back {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.admin-passkey-overlay .user-gate-card {
+  position: relative;
+  padding-top: 58px;
+}

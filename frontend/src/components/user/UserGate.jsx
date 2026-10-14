@@ -1,95 +1,88 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { request } from "../../api/client";
 import { useNavigate } from "react-router-dom";
 import { notify } from "../../utils/notify";
-import { playPopup, playDing } from "../../utils/sound";
 
 export default function UserGate() {
-  const [users, setUsers] = useState([]);
-  const [active, setActive] = useState(() => localStorage.getItem("inventory-user") || "");
-  const [selected, setSelected] = useState("");
-  const [name, setName] = useState("");
+  const [mode, setMode] = useState("login");
   const [username, setUsername] = useState("");
+  const [passkey, setPasskey] = useState("");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
 
-  const load = async () => {
-    try {
-      setUsers(await request("/api/users"));
-    } catch (err) {
-      setError(err.message);
-    }
-  };
-
-  useEffect(() => {
-    playPopup();
-    load();
-  }, []);
-
-  async function selectUser(event) {
-    event.preventDefault();
-    const user = users.find((item) => item.name === selected);
-    if (!user) return;
-    localStorage.setItem("inventory-user", user.name);
-    sessionStorage.setItem("inventory-login-reminder", "1");
+  async function finishSession(data) {
+    localStorage.setItem("inventory-token", data.access_token);
+    localStorage.setItem("inventory-user", JSON.stringify(data.user));
     window.dispatchEvent(new CustomEvent("inventory-user-logged-in"));
-    setActive(user.name);
+    notify(`Welcome, ${data.user.name || data.user.username}`);
     navigate("/", { replace: true });
   }
 
-  async function createUser(event) {
+  async function handleLogin(event) {
     event.preventDefault();
     setError("");
+    setLoading(true);
     try {
-      const user = await request("/api/users", {
+      const data = await request("/api/auth/login", {
         method: "POST",
-        body: JSON.stringify({ name, username, email: "" }),
+        body: JSON.stringify({ username, passkey }),
       });
-      await load();
-      localStorage.setItem("inventory-user", user.name);
-      notify(`Welcome, ${user.name}`);
-      sessionStorage.setItem("inventory-login-reminder", "1");
-      sessionStorage.setItem("inventory-reloading", "1");
-      playDing();
-      window.location.assign("/");
+      await finishSession(data);
     } catch (err) {
       setError(err.message);
+    } finally {
+      setLoading(false);
     }
   }
 
-  if (active) return null;
+  async function handleRegister(event) {
+    event.preventDefault();
+    setError("");
+    setLoading(true);
+    try {
+      const data = await request("/api/auth/register", {
+        method: "POST",
+        body: JSON.stringify({ name, username, email, passkey }),
+      });
+      await finishSession(data);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  if (localStorage.getItem("inventory-token")) return null;
 
   return (
     <div className="user-gate-overlay">
       <div className="user-gate-card">
-        <h2>Select User</h2>
-        <p>Choose a registered user before using Inventory Suite.</p>
+        <h2>{mode === "login" ? "Log In" : "Create Account"}</h2>
+        <p>{mode === "login" ? "Enter your username and passkey." : "Register a new user account."}</p>
         {error && <p className="error">{error}</p>}
-        {users.length > 0 ? (
-          <form className="edit-form login-form" onSubmit={selectUser}>
-            <label>
-              User
-              <select value={selected} onChange={(event) => setSelected(event.target.value)} required>
-                <option value="">Select user</option>
-                {users.map((user) => (
-                  <option key={user.id} value={user.name}>
-                    {user.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <button type="submit">Continue</button>
+        {mode === "login" ? (
+          <form className="edit-form login-form" onSubmit={handleLogin}>
+            <label>Username<input value={username} onChange={(e) => setUsername(e.target.value)} required /></label>
+            <label>Passkey<input type="password" value={passkey} onChange={(e) => setPasskey(e.target.value)} required /></label>
+            <button type="submit" disabled={loading}>{loading ? "Logging in..." : "Log In"}</button>
           </form>
         ) : (
-          <p>No users yet. Create one below.</p>
+          <form className="edit-form login-form" onSubmit={handleRegister}>
+            <label>Name<input value={name} onChange={(e) => setName(e.target.value)} required /></label>
+            <label>Username<input value={username} onChange={(e) => setUsername(e.target.value)} required /></label>
+            <label>Email<input value={email} onChange={(e) => setEmail(e.target.value)} /></label>
+            <label>Passkey<input type="password" value={passkey} onChange={(e) => setPasskey(e.target.value)} required minLength={8} /></label>
+            <button type="submit" disabled={loading}>{loading ? "Creating..." : "Register"}</button>
+          </form>
         )}
         <div className="user-gate-divider"><span>or</span></div>
-        <form className="edit-form login-form" onSubmit={createUser}>
-          <label>Name<input value={name} onChange={(event) => setName(event.target.value)} required /></label>
-          <label>Username<input value={username} onChange={(event) => setUsername(event.target.value)} required /></label>
-          <button type="submit">Create and Continue</button>
-        </form>
+        <button type="button" className="secondary" onClick={() => { setError(""); setMode(mode === "login" ? "register" : "login"); }}>
+          {mode === "login" ? "Need an account? Register" : "Already have an account? Log in"}
+        </button>
       </div>
     </div>
   );

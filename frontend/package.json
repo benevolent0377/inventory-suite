@@ -8,7 +8,7 @@
     "build": "vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "backend": "cd ../backend && .venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload",
+    "backend": "cd ../backend && .venv/bin/python -c \"from app.certs import ensure_certificate; ensure_certificate()\" && .venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000 --ssl-certfile data/certs/inventory-cert.pem --ssl-keyfile data/certs/inventory-key.pem --reload",
     "app": "concurrently \"npm run dev\" \"npm run backend\""
   },
   "dependencies": {
