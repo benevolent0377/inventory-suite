@@ -1,0 +1,53 @@
+[data-theme = "light"] {
+  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
+  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
+  --mono: ui-monospace, Consolas, monospace;
+  --text: #121826;
+  --text-h: #070A12;
+  --text-muted: #667085;
+  --link: #2563eb;
+  --bg: #f8fafc;
+  --secondary-bg: #e5e7eb;
+  --surface: #ffffff;
+  --surface-hover: #f1f5f9;
+  --gradient-a: #dbeafe88;
+  --gradient-b: #93c5fd99;
+  --border: #cbd5e1;
+  --code-bg: #111827;
+  --accent: #2563eb;
+  --accent-bg: rgba(37, 99, 235, 0.12);
+  --accent-border: rgba(37, 99, 235, 0.45);
+  --social-bg: rgba(37, 99, 235, 0.12);
+  --success: #16a34a;
+  --warning: #d97706;
+  --error: #dc2626;
+  --info: #0284c7;
+  --icon: #475569;
+  --icon-muted: #94a3b8;
+  --icon-active: #2563eb;
+  --icon-hover: #0f172a;
+  --icon-success: #16a34a;
+  --icon-warning: #d97706;
+  --icon-error: #dc2626;
+  --shadow-color: rgba(15, 23, 42, 0.14);
+  --shadow-hover-color: rgba(15, 23, 42, 0.24);
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 22px;
+  --shadow: 0 10px 28px var(--shadow-color);
+  --shadow-hover: 0 16px 42px var(--shadow-hover-color);
+}
+
+[data-theme="light"] {
+  --bg-start: var(--bg);
+  --bg-end: var(--secondary-bg, var(--bg));
+  --panel: var(--surface);
+  --panel-strong: var(--surface-hover, var(--surface));
+  --heading: var(--text-h);
+  --muted: var(--text-muted);
+  --accent-2: var(--accent-border, var(--accent));
+  --danger: var(--error);
+  --radius: var(--radius-md, 12px);
+}

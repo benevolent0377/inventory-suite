@@ -1,0 +1,64 @@
+[data-theme="cephalon-teal"] {
+  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
+  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
+  --mono: ui-monospace, Consolas, monospace;
+
+  --text: #eee5e5;
+  --text-h: #ffffff;
+  --text-muted: #ddcecd;
+  --link: #28afb0;
+
+  --bg: #37392e;
+  --secondary-bg: #2f3128;
+  --surface: #3f4236;
+  --surface-hover: #4b4f40;
+
+  --gradient-a: #19647e55;
+  --gradient-b: #28afb044;
+
+  --border: #19647e;
+  --code-bg: #27291f;
+
+  --accent: #28afb0;
+  --accent-bg: rgba(40, 175, 176, 0.14);
+  --accent-border: rgba(40, 175, 176, 0.55);
+
+  --social-bg: rgba(25, 100, 126, 0.18);
+
+  --success: #28afb0;
+  --warning: #ddcecd;
+  --error: #d96c75;
+  --info: #19647e;
+
+  --icon: #ddcecd;
+  --icon-muted: #8f9a94;
+  --icon-active: #28afb0;
+  --icon-hover: #eee5e5;
+  --icon-success: #28afb0;
+  --icon-warning: #ddcecd;
+  --icon-error: #d96c75;
+
+  --shadow-color: rgba(0, 0, 0, 0.42);
+  --shadow-hover-color: rgba(25, 100, 126, 0.42);
+
+  --radius-xs: 2px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
+
+  --shadow: 0 12px 34px var(--shadow-color);
+  --shadow-hover: 0 20px 56px var(--shadow-hover-color);
+}
+
+[data-theme="cephalon-teal"] {
+  --bg-start: var(--bg);
+  --bg-end: var(--secondary-bg, var(--bg));
+  --panel: var(--surface);
+  --panel-strong: var(--surface-hover, var(--surface));
+  --heading: var(--text-h);
+  --muted: var(--text-muted);
+  --accent-2: var(--accent-border, var(--accent));
+  --danger: var(--error);
+  --radius: var(--radius-md, 12px);
+}

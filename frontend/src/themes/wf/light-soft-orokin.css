@@ -1,0 +1,53 @@
+[data-theme = "light-soft-orokin"] {
+  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
+  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
+  --mono: ui-monospace, Consolas, monospace;
+  --text: #2a2118;
+  --text-h: #14100c;
+  --text-muted: #7b6f61;
+  --link: #9a6a22;
+  --bg: #fbf6ec;
+  --secondary-bg: #eadfcd;
+  --surface: #fffaf1;
+  --surface-hover: #f5ead8;
+  --gradient-a: #fff0c777;
+  --gradient-b: #d6a64766;
+  --border: #d8c6a8;
+  --code-bg: #1e1b16;
+  --accent: #c7922e;
+  --accent-bg: rgba(199, 146, 46, 0.14);
+  --accent-border: rgba(199, 146, 46, 0.48);
+  --social-bg: rgba(154, 106, 34, 0.14);
+  --success: #3f8f4a;
+  --warning: #c78318;
+  --error: #c24134;
+  --info: #3b82a0;
+  --icon: #6f5d44;
+  --icon-muted: #a49580;
+  --icon-active: #c7922e;
+  --icon-hover: #2a2118;
+  --icon-success: #3f8f4a;
+  --icon-warning: #c78318;
+  --icon-error: #c24134;
+  --shadow-color: rgba(83, 60, 28, 0.16);
+  --shadow-hover-color: rgba(83, 60, 28, 0.28);
+  --radius-xs: 4px;
+  --radius-sm: 9px;
+  --radius-md: 13px;
+  --radius-lg: 18px;
+  --radius-xl: 24px;
+  --shadow: 0 10px 30px var(--shadow-color);
+  --shadow-hover: 0 18px 46px var(--shadow-hover-color);
+}
+
+[data-theme="light-soft-orokin"] {
+  --bg-start: var(--bg);
+  --bg-end: var(--secondary-bg, var(--bg));
+  --panel: var(--surface);
+  --panel-strong: var(--surface-hover, var(--surface));
+  --heading: var(--text-h);
+  --muted: var(--text-muted);
+  --accent-2: var(--accent-border, var(--accent));
+  --danger: var(--error);
+  --radius: var(--radius-md, 12px);
+}
