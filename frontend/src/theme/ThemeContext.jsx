@@ -7,17 +7,6 @@ export function ThemeProvider({ children }) {
   const [theme, setThemeState] = useState(() => localStorage.getItem("inventory-theme") || "light");
   const [textSize, setTextSize] = useState(() => Number(localStorage.getItem("inventory-text-size")) || 100);
 
-  useEffect(() => {
-    function updateSize() {
-      const ratio = window.innerWidth / Math.max(window.innerHeight, 1);
-      const next = Math.min(130, Math.max(80, Math.round((ratio / (16 / 9)) * 100 * 1.50)));
-      setTextSize(next);
-    }
-    updateSize();
-    window.addEventListener("resize", updateSize);
-    return () => window.removeEventListener("resize", updateSize);
-  }, []);
-
   const applyUserTheme = useCallback(async () => {
     const activeName = localStorage.getItem("inventory-user");
     if (!activeName) return;

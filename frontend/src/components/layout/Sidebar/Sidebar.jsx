@@ -10,9 +10,10 @@ export function Sidebar() {
         <div className="logo-mark"><Boxes size={18} /></div>
         <div className="text-wrapper">
           <p className="title">Inventory Suite</p>
-          <p className="version-tag">BETA 1.2.0</p>
+          <p className="version-tag">BETA 1.3.1</p>
         </div>
       </div>
+      <div className="sidebar-divider" />
 
       <nav className="sidebar-items">
         {appRoutes.map((route) => {

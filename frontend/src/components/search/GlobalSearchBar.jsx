@@ -18,6 +18,7 @@ export default function GlobalSearchBar() {
         <option value="products">Products</option>
         <option value="vendors">Vendors</option>
         <option value="orders">Orders</option>
+        <option value="logistics">Logistics</option>
       </select>
       <input
         value={query}

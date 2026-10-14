@@ -52,6 +52,10 @@ export default function OrdersPage() {
     setItems([...items, { sku: "", quantity: 1, expected: "" }]);
   }
 
+  function removeItem(index) {
+    setItems((current) => (current.length <= 1 ? [{ sku: "", quantity: 1, expected: "" }] : current.filter((_, i) => i !== index)));
+  }
+
   async function handleSubmit(event) {
     event.preventDefault();
     setError("");
@@ -121,25 +125,31 @@ export default function OrdersPage() {
         <div className="order-items-editor">
           <p>Items</p>
           {items.map((item, index) => (
-            <div className="form-row" key={index}>
-              <label>
-                Item
-                <select value={item.sku} onChange={(e) => updateItem(index, "sku", e.target.value)}>
-                  <option value="">Select item</option>
-                  {products.map((p) => <option key={p.id} value={p.sku}>{p.sku}</option>)}
-                </select>
-              </label>
-              <label>
-                Qty
-                <input type="number" min="1" value={item.quantity} onChange={(e) => updateItem(index, "quantity", e.target.value)} />
-              </label>
-              <label>
-                Expected Arrival
-                <input type="date" value={item.expected} onChange={(e) => updateItem(index, "expected", e.target.value)} />
-              </label>
+            <div key={index}>
+              <div className="form-row">
+                <label>
+                  Item
+                  <select value={item.sku} onChange={(e) => updateItem(index, "sku", e.target.value)}>
+                    <option value="">Select item</option>
+                    {products.map((p) => <option key={p.id} value={p.sku}>{p.sku}</option>)}
+                  </select>
+                </label>
+                <label>
+                  Qty
+                  <input type="number" min="1" value={item.quantity} onChange={(e) => updateItem(index, "quantity", e.target.value)} />
+                </label>
+                <label>
+                  Expected Arrival
+                  <input type="date" value={item.expected} onChange={(e) => updateItem(index, "expected", e.target.value)} />
+                </label>
+              </div>
+              {index < items.length - 1 && <br />}
             </div>
           ))}
-          <button type="button" onClick={addItem}>Add Item Row</button>
+          <div className="form-row">
+            <button type="button" onClick={addItem}>Add Item Row</button>
+            {items.length > 2 && <button type="button" onClick={() => removeItem(items.length - 1)}>Delete Item Row</button>}
+          </div>
         </div>
         <button type="submit">Create Order</button>
           </form>
@@ -180,7 +190,7 @@ export default function OrdersPage() {
                   <td>{item.quantity}</td>
                   <td>{item.expected_arrival_date ? item.expected_arrival_date.slice(0, 10) : "-"}</td>
                   <td>
-                    <input type="checkbox" checked={item.checked_in} disabled={fulfilling === order.id} onChange={() => toggleCheckin(order, item)} />
+                    <input type="checkbox" checked={item.checked_in} onChange={() => toggleCheckin(order, item)} />
                   </td>
                 </tr>
               ))}

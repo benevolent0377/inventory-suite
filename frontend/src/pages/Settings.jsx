@@ -1,6 +1,8 @@
 import { useTheme } from "../theme/useTheme";
 import { useEffect, useState } from "react";
 import { request } from "../api/client";
+import { notify } from "../utils/notify";
+import { confirm } from "../utils/confirm";
 
 const THEMES = [
   { value: "cephalon-teal", label: "Cephalon Teal" },
@@ -29,6 +31,8 @@ export default function SettingsPage() {
   const [userName, setUserName] = useState("");
   const [userUsername, setUserUsername] = useState("");
   const [userEmail, setUserEmail] = useState("");
+  const [selectedTable, setSelectedTable] = useState("all");
+  const [resetStatus, setResetStatus] = useState("");
   const [error, setError] = useState("");
 
   const loadUsers = async () => {
@@ -54,12 +58,28 @@ export default function SettingsPage() {
   }
 
   async function removeUser(id) {
-    if (!window.confirm("Delete this user?")) return;
+    if (!(await confirm("Delete this user?"))) return;
     try {
       await request(`/api/users/${id}`, { method: "DELETE" });
       await loadUsers();
     } catch (err) {
       setError(err.message);
+    }
+  }
+
+  async function resetTables() {
+    if (!(await confirm("This will clear the selected table data. This cannot be undone. Continue?"))) return;
+    setResetStatus("");
+    try {
+      const result = await request("/api/maintenance/tables/clear", {
+        method: "POST",
+        body: JSON.stringify({ tables: [selectedTable] }),
+      });
+      setResetStatus(`Cleared: ${result.tables.join(", ")}. Backup saved as ${result.backup}.`);
+      await loadUsers();
+      notify("Selected tables cleared");
+    } catch (err) {
+      setResetStatus(err.message);
     }
   }
 
@@ -114,6 +134,26 @@ export default function SettingsPage() {
             ))}
           </tbody>
         </table>
+      </section>
+
+      <section className="settings-section">
+        <h3>Reset Tables</h3>
+        <div className="form-row">
+          <label>
+            Table to clear
+            <select value={selectedTable} onChange={(event) => setSelectedTable(event.target.value)}>
+              <option value="all">All tables</option>
+              <option value="products">Products (items)</option>
+              <option value="vendors">Vendors</option>
+              <option value="stock">Stock</option>
+              <option value="orders">Orders</option>
+              <option value="order_items">Order Items</option>
+              <option value="users">Users</option>
+            </select>
+          </label>
+          <button type="button" onClick={resetTables}>Reset Table</button>
+        </div>
+        {resetStatus && <p>{resetStatus}</p>}
       </section>
     </div>
   );

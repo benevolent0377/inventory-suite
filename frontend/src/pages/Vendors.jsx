@@ -3,6 +3,7 @@ import { request } from "../api/client";
 import { useSearchParams } from "react-router-dom";
 import TabbedCard from "../components/ui/TabbedCard";
 import { notify } from "../utils/notify";
+import { confirm } from "../utils/confirm";
 
 export default function VendorsPage() {
   const [searchParams] = useSearchParams();
@@ -56,7 +57,7 @@ export default function VendorsPage() {
   }
 
   async function handleDelete(id) {
-    if (!window.confirm("Delete this vendor?")) return;
+    if (!(await confirm("Delete this vendor?"))) return;
     setError("");
     try {
       await request(`/api/vendors/${id}`, { method: "DELETE" });

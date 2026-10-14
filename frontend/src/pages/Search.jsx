@@ -13,7 +13,7 @@ export default function SearchPage() {
     setFilter(searchParams.get("filter") || "all");
   }, [searchParams]);
 
-  const [results, setResults] = useState({ query: "", products: [], vendors: [], orders: [] });
+  const [results, setResults] = useState({ query: "", products: [], vendors: [], orders: [], logistics: [] });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -21,7 +21,7 @@ export default function SearchPage() {
     // eslint-disable-next-line react/set-state-in-effect
     setInput(query);
     if (!query.trim()) {
-      setResults({ query: "", products: [], vendors: [], orders: [] });
+      setResults({ query: "", products: [], vendors: [], orders: [], logistics: [] });
       return;
     }
     setLoading(true);
@@ -47,6 +47,7 @@ export default function SearchPage() {
           <option value="products">Products</option>
           <option value="vendors">Vendors</option>
           <option value="orders">Orders</option>
+          <option value="logistics">Logistics</option>
         </select>
         <input value={input} onChange={(event) => setInput(event.target.value)} placeholder="Search the database..." />
         <button type="submit">Search</button>
@@ -96,7 +97,21 @@ export default function SearchPage() {
         </section>
       )}
 
-      {query && !loading && results.products.length + results.vendors.length + results.orders.length === 0 && (
+      {(filter === "all" || filter === "logistics") && (results.logistics || []).length > 0 && (
+        <section className="search-section">
+          <h3>Logistics</h3>
+          <table className="data-table">
+            <thead><tr><th>SKU</th><th>Name</th><th>On Hand</th><th>Required</th><th>Shortage</th><th>Urgency</th><th>Order Qty</th></tr></thead>
+            <tbody>
+              {(results.logistics || []).map((item) => (
+                <tr key={item.product_id}><td>{item.sku}</td><td>{item.name}</td><td>{item.on_hand}</td><td>{item.required_backstock}</td><td>{item.shortage}</td><td>{item.urgency}</td><td>{item.order_quantity}</td></tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
+      )}
+
+      {query && !loading && results.products.length + results.vendors.length + results.orders.length + (results.logistics?.length || 0) === 0 && (
         <p>No results found.</p>
       )}
     </div>

@@ -4,6 +4,7 @@ import { useSearchParams } from "react-router-dom";
 import TabbedCard from "../components/ui/TabbedCard";
 import { formatMoney } from "../utils/currency";
 import { notify } from "../utils/notify";
+import { confirm } from "../utils/confirm";
 import { playPopup } from "../utils/sound";
 
 const emptyForm = {
@@ -92,7 +93,7 @@ export default function ProductsPage() {
   }
 
   async function handleDelete(id) {
-    if (!window.confirm("Delete this item?")) return;
+    if (!(await confirm("Delete this item?"))) return;
     setError("");
     try {
       await request(`/api/products/${id}`, { method: "DELETE" });

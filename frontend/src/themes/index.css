@@ -353,6 +353,7 @@ button:disabled {
 
 .data-table {
   width: 100%;
+  margin: 12px 0;
   border-collapse: collapse;
   font-size: 0.84rem;
   background: transparent;
@@ -495,13 +496,20 @@ button {
 }
 
 
+button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
  .bottom-bar {
   position: sticky;
   bottom: 0;
   width: 100%;
   height: auto;
-  max-height: 25px;
-  padding: 5px;
+  max-height: 30px;
+  padding: 7px;
   display: flex;
   align-items: center;
   justify-content: flex-end;
@@ -521,9 +529,9 @@ button {
 .bottom-bar button,
 .bottom-bar .status-button,
 .bottom-bar .bottom-settings {
-  height: 15px;
-  min-height: 15px;
-  padding: 0 6px;
+  height: 20px;
+  min-height: 20px;
+  padding: 0 8px;
 }
 
 .bottom-bar-actions {
@@ -871,6 +879,16 @@ h3 {
   font-family: var(--sans);
 }
 
+h3::after {
+  content: "";
+  display: block;
+  width: 15%;
+  height: 2px;
+  margin-top: 6px;
+  border-radius: var(--radius);
+  background: var(--accent);
+}
+
 .bottom-quit {
   margin-right: auto;
   height: 26px;
@@ -911,4 +929,179 @@ h3 {
     opacity: 0;
     transform: translateY(-6px);
   }
+}
+
+@media (min-width: 1000px) {
+  .form-grid,
+  .form-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    align-items: start;
+    gap: 12px 16px;
+  }
+
+  .form-grid > *,
+  .form-row > * {
+    flex: 0 0 auto;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .form-grid label,
+  .form-row label {
+    width: 100%;
+  }
+
+  .form-grid input,
+  .form-grid select,
+  .form-grid textarea,
+  .form-row input,
+  .form-row select,
+  .form-row textarea {
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .form-grid button,
+  .form-row button {
+    justify-self: start;
+    align-self: end;
+    min-width: 120px;
+  }
+
+  .edit-form {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+  }
+
+  .edit-form label {
+    width: 100%;
+  }
+
+  .edit-form input,
+  .edit-form select,
+  .edit-form textarea {
+    width: 100%;
+    box-sizing: border-box;
+    height: 36px;
+  }
+
+  .edit-modal-card {
+    width: min(760px, 100%);
+  }
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent), transparent 75%);
+}
+
+.login-reminder {
+  position: fixed;
+  z-index: 9500;
+  max-width: 280px;
+  padding: 12px 14px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  color: var(--text);
+  font-size: 0.82rem;
+  line-height: 1.35;
+  animation: fadeUp 0.2s ease, noticeFadeOut 0.4s ease 4.6s forwards;
+}
+
+.login-reminder-settings {
+  bottom: 48px;
+  right: 16px;
+}
+
+.login-reminder-logout {
+  bottom: 48px;
+  right: 76px;
+}
+
+.login-reminder-arrow {
+  position: absolute;
+  bottom: -9px;
+  width: 0;
+  height: 0;
+  border-left: 9px solid transparent;
+  border-right: 9px solid transparent;
+  border-top: 9px solid var(--panel);
+}
+
+.login-reminder-arrow-settings {
+  right: 16px;
+}
+
+.login-reminder-arrow-logout {
+  right: 16px;
+}
+
+@media (min-width: 1000px) {
+  .sidebar-items {
+    justify-content: flex-end;
+  }
+}
+
+.login-form {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+}
+
+@media (min-width: 1000px) {
+  .login-form {
+    display: flex !important;
+    flex-direction: column !important;
+  }
+}
+
+.confirm-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(4px);
+}
+
+.confirm-card {
+  width: min(420px, 100%);
+  background: var(--panel);
+  backdrop-filter: var(--blur);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 18px;
+}
+
+.confirm-message {
+  margin: 0 0 14px;
+  color: var(--text);
+  font-size: 0.9rem;
+}
+
+.confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.danger-button {
+  background: var(--danger);
+  color: #fff;
+}
+
+.settings-section .form-grid label {
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
 }

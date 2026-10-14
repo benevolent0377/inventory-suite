@@ -198,3 +198,18 @@
   border: 1px solid var(--border);
   padding: 0 8px;
 }
+
+.sidebar-divider {
+  width: 4px;
+  align-self: stretch;
+  background: linear-gradient(180deg, var(--accent), var(--accent-2));
+  border-radius: 999px;
+  margin: 0 12px;
+}
+
+@media (max-width: 999px) {
+  .sidebar-divider {
+    width: 1px;
+    background: var(--border);
+  }
+}

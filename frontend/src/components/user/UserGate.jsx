@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { request } from "../../api/client";
+import { useNavigate } from "react-router-dom";
 import { notify } from "../../utils/notify";
 import { playPopup, playDing } from "../../utils/sound";
 
@@ -10,6 +11,8 @@ export default function UserGate() {
   const [name, setName] = useState("");
   const [username, setUsername] = useState("");
   const [error, setError] = useState("");
+
+  const navigate = useNavigate();
 
   const load = async () => {
     try {
@@ -29,7 +32,10 @@ export default function UserGate() {
     const user = users.find((item) => item.name === selected);
     if (!user) return;
     localStorage.setItem("inventory-user", user.name);
+    sessionStorage.setItem("inventory-login-reminder", "1");
+    window.dispatchEvent(new CustomEvent("inventory-user-logged-in"));
     setActive(user.name);
+    navigate("/", { replace: true });
   }
 
   async function createUser(event) {
@@ -43,9 +49,10 @@ export default function UserGate() {
       await load();
       localStorage.setItem("inventory-user", user.name);
       notify(`Welcome, ${user.name}`);
+      sessionStorage.setItem("inventory-login-reminder", "1");
       sessionStorage.setItem("inventory-reloading", "1");
       playDing();
-      window.location.reload();
+      window.location.assign("/");
     } catch (err) {
       setError(err.message);
     }
@@ -60,7 +67,7 @@ export default function UserGate() {
         <p>Choose a registered user before using Inventory Suite.</p>
         {error && <p className="error">{error}</p>}
         {users.length > 0 ? (
-          <form className="edit-form" onSubmit={selectUser}>
+          <form className="edit-form login-form" onSubmit={selectUser}>
             <label>
               User
               <select value={selected} onChange={(event) => setSelected(event.target.value)} required>
@@ -78,7 +85,7 @@ export default function UserGate() {
           <p>No users yet. Create one below.</p>
         )}
         <div className="user-gate-divider"><span>or</span></div>
-        <form className="edit-form" onSubmit={createUser}>
+        <form className="edit-form login-form" onSubmit={createUser}>
           <label>Name<input value={name} onChange={(event) => setName(event.target.value)} required /></label>
           <label>Username<input value={username} onChange={(event) => setUsername(event.target.value)} required /></label>
           <button type="submit">Create and Continue</button>
