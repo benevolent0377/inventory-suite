@@ -87,7 +87,7 @@ function AppFrame() {
       <div className="bottom-bar">
         <div className="bottom-bar-actions">
           <StatusDropdown />
-          <button type="button" className="bottom-logout" onClick={async () => { if (!(await confirm("Log out?"))) return; localStorage.removeItem("inventory-user"); window.location.assign("/"); }} title="Log out">
+          <button type="button" className="bottom-logout" onClick={async () => { if (!(await confirm("Log out?"))) return; localStorage.removeItem("inventory-user"); localStorage.removeItem("inventory-token"); window.location.assign("/"); }} title="Log out">
             <DoorOpen size={16} />
           </button>
           <Link to="/settings" className="bottom-settings" title="Settings">
