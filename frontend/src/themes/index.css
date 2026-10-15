@@ -1498,3 +1498,11 @@ html[data-reduce-motion="true"] *::after {
   width: 0;
   height: 0;
 }
+
+.order-create-left,
+.order-create-left label,
+.order-create-left input,
+.order-create-left select {
+  width: 100%;
+  min-width: 0;
+}
