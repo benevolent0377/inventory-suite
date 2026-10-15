@@ -69,10 +69,9 @@
   align-items: center;
   gap: 12px;
   width: 100%;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   min-width: 0;
-  overflow-x: auto;
-  overflow-y: hidden;
+  overflow: hidden;
 }
 
 .logo-container,
@@ -89,6 +88,11 @@
     flex: 1 1 100%;
     order: 0;
     margin-bottom: 8px;
+  }
+
+  .sidebar-items {
+    flex: 1 1 100%;
+    order: 1;
   }
 }
 
