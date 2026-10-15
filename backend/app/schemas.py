@@ -8,6 +8,7 @@ class ProductCreate(BaseModel):
     sku: str
     name: str
     category: str = ""
+    description: str = ""
     unit: str = "each"
     price: float = 0
     cost: float = 0
@@ -143,7 +144,8 @@ class LogisticsItem(BaseModel):
     order_overhead_months: float = 0
     cost: float = 0
     price: float = 0
-    urgency: str
+    status: str
+    urgency: float = 1
     order_quantity: float = 0
     slow_order: bool = False
     priority_score: float = 0

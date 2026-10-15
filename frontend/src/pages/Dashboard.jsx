@@ -98,7 +98,7 @@ export default function DashboardPage() {
         <div className="stat-card"><span>Inventory Cost</span><strong>{formatMoney(logistics.total_inventory_cost)}</strong></div>
       </div>
       <table className="data-table">
-        <thead><tr><th>SKU</th><th>Name</th><th>On Hand</th><th>Required</th><th>Shortage</th><th>Urgency</th><th>Order Qty</th></tr></thead>
+        <thead><tr><th>SKU</th><th>Name</th><th>On Hand</th><th>Required</th><th>Shortage</th><th>Status</th><th>Urgency</th><th>Order Qty</th></tr></thead>
         <tbody>
           {logistics.items.map((item) => (
             <tr key={item.product_id}>
@@ -107,7 +107,8 @@ export default function DashboardPage() {
               <td>{item.on_hand}</td>
               <td>{item.required_backstock}</td>
               <td>{item.shortage}</td>
-              <td>{item.urgency}</td>
+              <td>{item.status}</td>
+              <td><span style={{ color: `hsl(${120 - ((Number(item.urgency) - 1) / 19) * 120}, 85%, 45%)`, fontWeight: 700 }}>{Number(item.urgency).toFixed(1).padStart(4, "0")}</span></td>
               <td>{item.order_quantity}</td>
             </tr>
           ))}

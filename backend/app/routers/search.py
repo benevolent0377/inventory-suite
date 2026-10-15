@@ -102,16 +102,19 @@ def search(q: str = Query(default=""), db: Session = Depends(get_db)):
         on_hand = on_hand_by_product.get(product.id, 0.0)
         required = product.required_backstock or 0
         shortage = max(required - on_hand, 0)
+        urgency_shortage = shortage + (product.order_overhead_days or 0) + (product.order_overhead_months or 0) * 30
         if required <= 0:
-            urgency = "not_tracked"
+            status = "not_tracked"
         elif on_hand <= 0:
-            urgency = "out_of_stock"
-        elif shortage >= max(1, required * 0.5):
-            urgency = "critical"
-        elif shortage > 0:
-            urgency = "low"
+            status = "out_of_stock"
+        elif urgency_shortage >= max(1, required * 0.5):
+            status = "critical"
+        elif urgency_shortage > 0:
+            status = "low"
         else:
-            urgency = "healthy"
+            status = "healthy"
+        urgency_weight = {"out_of_stock": 4, "critical": 3, "low": 2, "not_tracked": 1, "healthy": 0}.get(status, 0)
+        urgency = float(max(1, urgency_weight * 5))
         vendor = db.get(models.Vendor, product.vendor_id) if product.vendor_id else None
         logistics_item = {
             "product_id": product.id,
@@ -121,6 +124,7 @@ def search(q: str = Query(default=""), db: Session = Depends(get_db)):
             "on_hand": on_hand,
             "required_backstock": required,
             "shortage": shortage,
+            "status": status,
             "urgency": urgency,
             "order_quantity": shortage,
         }

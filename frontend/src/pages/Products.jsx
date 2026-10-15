@@ -11,6 +11,7 @@ const emptyForm = {
   sku: "",
   name: "",
   category: "",
+  description: "",
   unit: "each",
   price: 0,
   cost: 0,
@@ -68,6 +69,7 @@ export default function ProductsPage() {
       sku: product.sku,
       name: product.name,
       category: product.category,
+      description: product.description,
       unit: product.unit,
       price: product.price,
       cost: product.cost,
@@ -141,6 +143,7 @@ export default function ProductsPage() {
         <label>SKU<input value={form.sku} onChange={(e) => setForm({ ...form, sku: e.target.value })} required /></label>
         <label>Name<input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required /></label>
         <label>Category<input value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} /></label>
+        <label>Description<input value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></label>
         <label>Unit<input value={form.unit} onChange={(e) => setForm({ ...form, unit: e.target.value })} /></label>
         <label>Vendor
           <select value={form.vendor_id} onChange={(e) => setForm({ ...form, vendor_id: e.target.value })} required>
@@ -161,12 +164,22 @@ export default function ProductsPage() {
             label: "Items",
             content: (
               <table className="data-table">
-        <thead><tr><th>SKU</th><th>Name</th><th>Vendor</th><th>Price</th><th>Last Price</th><th>Cost</th><th>Required</th><th>Overhead Days</th><th>Overhead Months</th><th>Actions</th></tr></thead>
+        <thead><tr><th>SKU</th><th>Name</th><th>Description</th><th>Vendor</th><th>Price</th><th>Last Price</th><th>Cost</th><th>Required</th><th>Overhead Days</th><th>Overhead Months</th><th>Actions</th></tr></thead>
         <tbody>
           {visibleProducts.map((product) => (
             <tr key={product.id}>
               <td>{product.sku}</td>
               <td>{product.name}</td>
+              <td>
+                <details>
+                  <summary style={{ cursor: "pointer", display: "block", maxWidth: "18rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {product.description || "-"}
+                  </summary>
+                  <div style={{ marginTop: "0.25rem", whiteSpace: "pre-wrap", wordBreak: "break-word", maxWidth: "30rem" }}>
+                    {product.description || "-"}
+                  </div>
+                </details>
+              </td>
               <td>{vendors.find((vendor) => vendor.id === product.vendor_id)?.name || "-"}</td>
               <td>{formatMoney(product.price)}</td>
               <td>{product.last_price == null ? "-" : formatMoney(product.last_price)}</td>
@@ -194,6 +207,7 @@ export default function ProductsPage() {
               <label>SKU<input value={editForm.sku} onChange={(e) => setEditForm({ ...editForm, sku: e.target.value })} required /></label>
               <label>Name<input value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} required /></label>
               <label>Category<input value={editForm.category} onChange={(e) => setEditForm({ ...editForm, category: e.target.value })} /></label>
+              <label>Description<input value={editForm.description} onChange={(e) => setEditForm({ ...editForm, description: e.target.value })} /></label>
               <label>Unit<input value={editForm.unit} onChange={(e) => setEditForm({ ...editForm, unit: e.target.value })} /></label>
               <label>Vendor
                 <select value={editForm.vendor_id} onChange={(e) => setEditForm({ ...editForm, vendor_id: e.target.value })} required>

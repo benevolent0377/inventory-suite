@@ -50,7 +50,9 @@ export default function StockPage() {
     <div className="page">
       <h2>Stock Balances</h2>
       {error && <p className="error">{error}</p>}
-      <form className="form-row" onSubmit={handleSale}>
+      <div className="stock-layout">
+        <div className="stock-form-panel">
+          <form id="stock-remove-form" className="form-row" onSubmit={handleSale}>
         <label>
           Item
           <select value={productSku} onChange={(e) => setProductSku(e.target.value)} required>
@@ -73,9 +75,13 @@ export default function StockPage() {
             <option value="liquidated">Liquidated</option>
           </select>
         </label>
-        <button type="submit">Remove Stock</button>
+        <div style={{ display: "flex", justifyContent: "flex-start", width: "100%", marginTop: "0.5rem" }}>
+          <button type="submit">Remove Stock</button>
+        </div>
       </form>
-      <table className="data-table">
+        </div>
+        <div className="stock-table-panel">
+          <table className="data-table">
         <thead><tr><th>SKU</th><th>Product</th><th>On Hand</th><th>Reserved</th></tr></thead>
         <tbody>
           {visibleStock.map((row) => (
@@ -88,6 +94,8 @@ export default function StockPage() {
           ))}
         </tbody>
       </table>
+        </div>
+      </div>
     </div>
   );
 }

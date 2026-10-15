@@ -99,6 +99,7 @@ def cmd_items_create(args):
     product = models.Product(
         sku=args.sku,
         name=args.name,
+        description=getattr(args, "description", "") or "",
         category=args.category or "",
         unit=args.unit or "each",
         price=args.price or 0,
@@ -124,6 +125,8 @@ def cmd_items_update(args):
         product.name = args.name
     if args.category is not None:
         product.category = args.category
+    if getattr(args, "description", None) is not None:
+        product.description = args.description
     if args.unit is not None:
         product.unit = args.unit
     if args.price is not None:
@@ -276,22 +279,25 @@ def cmd_logistics(args):
     stock_qty = {}
     for row in db.query(models.Stock).all():
         stock_qty[row.product_id] = stock_qty.get(row.product_id, 0) + row.on_hand
-    print("ID  SKU             NAME                 ON_HAND  REQUIRED  SHORTAGE  URGENCY   COST")
+    print("ID  SKU             NAME                 ON_HAND  REQUIRED  SHORTAGE  STATUS    URGENCY COST")
     for p in products:
         on_hand = stock_qty.get(p.id, 0.0)
         required = p.required_backstock or 0
         shortage = max(required - on_hand, 0)
+        urgency_shortage = shortage + (p.order_overhead_days or 0) + (p.order_overhead_months or 0) * 30
         if required <= 0:
-            urgency = "n/a"
+            status = "not_tracked"
         elif on_hand <= 0:
-            urgency = "out"
-        elif shortage >= max(1, required * 0.5):
-            urgency = "critical"
-        elif shortage > 0:
-            urgency = "low"
+            status = "out"
+        elif urgency_shortage >= max(1, required * 0.5):
+            status = "critical"
+        elif urgency_shortage > 0:
+            status = "low"
         else:
-            urgency = "ok"
-        print(f"{p.id:>3} {p.sku:<16} {p.name:<20} {on_hand:>7g} {required:>8g} {shortage:>8g} {urgency:<8} {p.cost:>6g}")
+            status = "ok"
+        urgency_weight = {"out": 4, "critical": 3, "low": 2, "not_tracked": 1, "ok": 0}.get(status, 0)
+        urgency = max(1, urgency_weight * 5)
+        print(f"{p.id:>3} {p.sku:<16} {p.name:<20} {on_hand:>7g} {required:>8g} {shortage:>8g} {status:<8} {urgency:>5.1f} {p.cost:>6g}")
     db.close()
 
 
@@ -320,6 +326,7 @@ def build_parser():
     ic.add_argument("--sku", required=True)
     ic.add_argument("--name", required=True)
     ic.add_argument("--category", default="")
+    ic.add_argument("--description", default="")
     ic.add_argument("--unit", default="each")
     ic.add_argument("--vendor")
     ic.add_argument("--price", type=float)
@@ -333,6 +340,7 @@ def build_parser():
     iu.add_argument("item")
     iu.add_argument("--name")
     iu.add_argument("--category")
+    iu.add_argument("--description")
     iu.add_argument("--unit")
     iu.add_argument("--vendor")
     iu.add_argument("--price", type=float)

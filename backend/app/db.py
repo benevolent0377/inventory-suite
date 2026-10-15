@@ -48,6 +48,11 @@ def ensure_schema():
                     text(f'ALTER TABLE "{table.name}" ADD COLUMN "{column.name}" {raw_type}')
                 )
     # Backfill values required by application code for older databases.
+    if inspector.has_table("products"):
+        with engine.begin() as connection:
+            columns = {column["name"] for column in inspector.get_columns("products")}
+            if "description" in columns:
+                connection.execute(text("UPDATE products SET description = '' WHERE description IS NULL"))
     if inspector.has_table("users"):
         with engine.begin() as connection:
             columns = {column["name"] for column in inspector.get_columns("users")}

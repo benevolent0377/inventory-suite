@@ -31,23 +31,26 @@ def logistics(db: Session = Depends(get_db)):
 
         required = product.required_backstock or 0
         shortage = max(required - on_hand, 0)
+        order_overhead_days = (product.order_overhead_days or 0) + (product.order_overhead_months or 0) * 30
+        urgency_shortage = shortage + order_overhead_days
 
         if required <= 0:
-            urgency = "not_tracked"
+            status = "not_tracked"
         elif on_hand <= 0:
-            urgency = "out_of_stock"
-        elif shortage >= max(1, required * 0.5):
-            urgency = "critical"
-        elif shortage > 0:
-            urgency = "low"
+            status = "out_of_stock"
+        elif urgency_shortage >= max(1, required * 0.5):
+            status = "critical"
+        elif urgency_shortage > 0:
+            status = "low"
         else:
-            urgency = "healthy"
+            status = "healthy"
 
         order_quantity = shortage
 
         slow_order = (product.cost or 0) >= 100
-        urgency_weight = {"out_of_stock": 4, "critical": 3, "low": 2, "not_tracked": 1, "healthy": 0}.get(urgency, 0)
-        priority_score = urgency_weight * 100 + shortage + ((product.cost or 0) * (0.01 if slow_order else 0.05))
+        urgency_weight = {"out_of_stock": 4, "critical": 3, "low": 2, "not_tracked": 1, "healthy": 0}.get(status, 0)
+        urgency = float(max(1, urgency_weight * 5))
+        priority_score = urgency_weight * 100 + shortage + order_overhead_days * 10 + ((product.cost or 0) * (0.01 if slow_order else 0.05))
 
         vendor = vendor_by_id.get(product.vendor_id)
         items.append(
@@ -63,6 +66,7 @@ def logistics(db: Session = Depends(get_db)):
                 order_overhead_months=product.order_overhead_months or 0,
                 cost=product.cost or 0,
                 price=product.price or 0,
+                status=status,
                 urgency=urgency,
                 order_quantity=order_quantity,
                 slow_order=slow_order,

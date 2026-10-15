@@ -387,6 +387,10 @@ button:disabled {
   background: var(--panel-strong);
 }
 
+.data-table button {
+  margin: 5px;
+}
+
 .order-card {
   padding: 10px;
   margin-bottom: 8px;
@@ -559,7 +563,7 @@ button {
 .dashboard-grid {
   display: flex;
   gap: 12px;
-  align-items: stretch;
+  align-items: flex-start;
 }
 
 .dashboard-grid > .dashboard-panel {
@@ -1134,4 +1138,23 @@ textarea:focus {
 .admin-passkey-overlay .user-gate-card {
   position: relative;
   padding-top: 58px;
+}
+
+
+.stock-layout {
+  display: block;
+}
+
+.stock-form-panel,
+.stock-table-panel {
+  width: 100%;
+}
+
+@media (min-width: 1001px) {
+  .stock-layout {
+    display: grid;
+    grid-template-columns: 1fr 3fr;
+    gap: 1rem;
+    align-items: start;
+  }
 }
