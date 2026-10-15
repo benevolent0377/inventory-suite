@@ -17,6 +17,8 @@ export default function OrdersPage() {
   const [vendorId, setVendorId] = useState("");
   const [tracking, setTracking] = useState("");
   const [items, setItems] = useState([{ sku: "", quantity: 1, expected: "", search: "" }]);
+  const [searchPopupIndex, setSearchPopupIndex] = useState(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     if (!placedBy && users.length) {
@@ -142,16 +144,15 @@ export default function OrdersPage() {
             <div key={index}>
               <div className="form-row">
                 <label>
-                  Search Items
-                  <input value={item.search || ""} onChange={(e) => updateItem(index, "search", e.target.value)} placeholder="Filter items" />
-                </label>
-                <label>
                   Item
                   <select value={item.sku} onChange={(e) => updateItem(index, "sku", e.target.value)}>
                     <option value="">Select item</option>
-                    {orderProducts.filter((product) => !item.search || [product.sku, product.name].join(" ").toLowerCase().includes(String(item.search).toLowerCase())).map((p) => <option key={p.id} value={p.sku}>{p.sku}</option>)}
+                    {orderProducts.map((p) => <option key={p.id} value={p.sku}>{p.sku}</option>)}
                   </select>
                 </label>
+                <button type="button" onClick={() => { setSearchPopupIndex(index); setSearchQuery(""); }} aria-label="Search items">
+                  &#128269;
+                </button>
                 <label>
                   Qty
                   <input type="number" min="1" value={item.quantity} onChange={(e) => updateItem(index, "quantity", e.target.value)} />
