@@ -151,6 +151,8 @@ vite.config.ts.timestamp-*
 # Local runtime database and backups
 backend/data/inventory.db
 backend/data/inventory.db-*
+!demo/
+!demo/inventory.db
 backend/data/backups/
 backend/data/certs/*.pem
 backend/data/certs/*.key

@@ -74,7 +74,7 @@ def remove_stock(payload: schemas.StockAdjustment, db: Session = Depends(get_db)
 
     movement_type = "liquidation" if payload.liquidated else "sale"
     stock.on_hand -= payload.quantity
-    db.add(models.Movement(product_id=product.id, movement_type=movement_type, quantity=-payload.quantity, reference=payload.reason or movement_type))
+    db.add(models.Movement(product_id=product.id, movement_type=movement_type, quantity=-payload.quantity, reference=payload.reason or movement_type, created_at=datetime.utcnow()))
     db.commit()
     db.refresh(stock)
 

@@ -7,7 +7,7 @@ from starlette.staticfiles import StaticFiles
 from starlette.responses import FileResponse
 
 from . import models  # noqa: F401
-from .db import Base, engine, ensure_schema, SessionLocal
+from .db import Base, engine, ensure_schema, SessionLocal, set_demo_db, reset_demo_db, DEMO_DB_PATH
 from .routers import register_routers
 from . import models
 from .auth import generate_passkey, get_user_by_token, hash_passkey
@@ -17,25 +17,34 @@ Base.metadata.create_all(bind=engine)
 ensure_schema()
 
 
-def _bootstrap_admin():
-    db = SessionLocal()
+def _bootstrap_admin(demo=False, passkey=None):
+    token = set_demo_db(demo)
     try:
-        admin = db.query(models.User).filter(models.User.username == "admin").first()
-        if not admin:
-            admin = models.User(name="Administrator", username="admin", email="", is_admin=True)
-            db.add(admin)
+        db = SessionLocal()
+        try:
+            admin = db.query(models.User).filter(models.User.username == "admin").first()
+            if not admin:
+                admin = models.User(name="Administrator", username="admin", email="", is_admin=True)
+                db.add(admin)
+                db.commit()
+                db.refresh(admin)
+            key = passkey or generate_passkey(14)
+            admin.passkey_hash = hash_passkey(key)
+            admin.passkey_updated_at = datetime.now(timezone.utc)
             db.commit()
-            db.refresh(admin)
-        key = generate_passkey(14)
-        admin.passkey_hash = hash_passkey(key)
-        admin.passkey_updated_at = datetime.now(timezone.utc)
-        db.commit()
-        print(f"[Inventory Suite] admin passkey: {key}  (username: admin)", flush=True)
+            if not demo:
+                print(f"[Inventory Suite] admin passkey: {key}  (username: admin)", flush=True)
+            return key
+        finally:
+            db.close()
     finally:
-        db.close()
+        reset_demo_db(token)
 
 
-_bootstrap_admin()
+admin_key = _bootstrap_admin(False)
+import os
+if os.path.exists(DEMO_DB_PATH):
+    _bootstrap_admin(True, passkey=admin_key)
 
 app = FastAPI(title="Inventory Suite API")
 
@@ -52,6 +61,7 @@ register_routers(app)
 
 @app.middleware("http")
 async def require_auth_and_audit(request, call_next):
+    _demo_context_token = set_demo_db(request.headers.get("X-Demo-DB", "").lower() == "true")
     import re
     from .audit import log_activity
 
@@ -68,6 +78,7 @@ async def require_auth_and_audit(request, call_next):
             if get_user_by_token(auth_db, token) is None:
                 auth_db.close()
                 from fastapi.responses import JSONResponse
+                reset_demo_db(_demo_context_token)
                 return JSONResponse(status_code=401, content={"detail": "Authentication required"})
         finally:
             auth_db.close()
@@ -106,6 +117,7 @@ async def require_auth_and_audit(request, call_next):
             db.rollback()
         finally:
             db.close()
+    reset_demo_db(_demo_context_token)
     return response
 
 frontend_dist = Path(__file__).resolve().parents[2] / "frontend" / "dist"

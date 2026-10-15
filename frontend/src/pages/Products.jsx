@@ -31,6 +31,13 @@ export default function ProductsPage() {
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState(null);
+  const [statsProduct, setStatsProduct] = useState(null);
+  const [statsOrders, setStatsOrders] = useState([]);
+  const [statsMovements, setStatsMovements] = useState([]);
+  const [statsOnHand, setStatsOnHand] = useState(0);
+  const [statsLoading, setStatsLoading] = useState(false);
+  const [statsError, setStatsError] = useState("");
+  const [dateRange, setDateRange] = useState("30");
   const [error, setError] = useState("");
 
   const load = async () => {
@@ -108,6 +115,29 @@ export default function ProductsPage() {
     }
   }
 
+  async function openStats(product) {
+    setStatsProduct(product);
+    setStatsOrders([]);
+    setStatsMovements([]);
+    setStatsOnHand(0);
+    setStatsError("");
+    setStatsLoading(true);
+     try {
+       const [ordersData, movementsData, stockData] = await Promise.all([
+         request("/api/orders"),
+         request(`/api/movements?product_id=${product.id}`),
+         request(`/api/stock?product_id=${product.id}`),
+       ]);
+       setStatsOrders(Array.isArray(ordersData) ? ordersData : []);
+       setStatsMovements(Array.isArray(movementsData) ? movementsData : []);
+       setStatsOnHand(Array.isArray(stockData) && stockData.length ? Number(stockData[0].on_hand) : 0);
+     } catch (err) {
+      setStatsError(err.message);
+    } finally {
+      setStatsLoading(false);
+    }
+  }
+
   function toPayload(raw) {
     return {
       ...raw,
@@ -146,6 +176,8 @@ export default function ProductsPage() {
         </label>
       </div>
       <TabbedCard
+        defaultTab={1}
+        style={{ marginTop: "25px" }}
         tabs={[
           {
             label: "Add Item",
@@ -201,6 +233,7 @@ export default function ProductsPage() {
               <td>
                 <button type="button" onClick={() => startEdit(product)}>Edit</button>
                 <button type="button" onClick={() => handleDelete(product.id)}>Delete</button>
+                <button type="button" onClick={() => openStats(product)}>Statistics</button>
               </td>
             </tr>
           ))}
@@ -210,6 +243,142 @@ export default function ProductsPage() {
           },
         ]}
       />
+      {statsProduct && (
+        <div className="edit-modal-overlay">
+          <div className="edit-modal-card" style={{ maxWidth: "92vw", width: "1140px", maxHeight: "90vh", overflow: "hidden" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px" }}>
+              <h3 style={{ margin: 0 }}>Statistics: {statsProduct.sku}</h3>
+              <select value={dateRange} onChange={(e) => setDateRange(e.target.value)}>
+                <option value="7">Last 7 days</option>
+                <option value="30">Last 30 days</option>
+                <option value="90">Last 90 days</option>
+                <option value="all">All time</option>
+              </select>
+            </div>
+            <p style={{ margin: "8px 0 0", fontSize: "0.85rem" }}>In inventory now: {statsOnHand}</p>
+            {statsLoading && <p>Loading...</p>}
+            {statsError && <p className="error">{statsError}</p>}
+            {!statsLoading && !statsError && (() => {
+              const toDateKey = (value) => {
+                if (!value) return null;
+                const date = new Date(value);
+                if (Number.isNaN(date.getTime())) return null;
+                return date.toISOString().slice(0, 10);
+              };
+              const today = new Date();
+              const todayKey = today.toISOString().slice(0, 10);
+              let startDate = null;
+              if (dateRange === "all") {
+                const dates = [
+                  ...statsOrders.map((order) => toDateKey(order.order_date || order.created_at)),
+                  ...statsMovements.map((movement) => toDateKey(movement.created_at)),
+                ].filter(Boolean);
+                startDate = dates.length ? dates.reduce((min, key) => (key < min ? key : min), dates[0]) : todayKey;
+              } else {
+                const days = Number(dateRange);
+                const start = new Date(today);
+                start.setDate(start.getDate() - days + 1);
+                startDate = start.toISOString().slice(0, 10);
+              }
+              const dayKeys = [];
+              {
+                const cursor = new Date(`${startDate}T00:00:00`);
+                const end = new Date(`${todayKey}T00:00:00`);
+                while (cursor <= end) {
+                  dayKeys.push(cursor.toISOString().slice(0, 10));
+                  cursor.setDate(cursor.getDate() + 1);
+                }
+              }
+              const orderedByDay = new Map();
+              const salesByDay = new Map();
+              for (const order of statsOrders) {
+                const orderDate = toDateKey(order.order_date || order.created_at);
+                if (!orderDate || orderDate < startDate || orderDate > todayKey) continue;
+                for (const item of order.items || []) {
+                  if (item.product_sku !== statsProduct.sku) continue;
+                  orderedByDay.set(orderDate, (orderedByDay.get(orderDate) || 0) + Number(item.quantity || 0));
+                }
+              }
+              for (const movement of statsMovements) {
+                const moveDate = toDateKey(movement.created_at);
+                if (!moveDate || moveDate < startDate || moveDate > todayKey) continue;
+                if (!["sale", "liquidation"].includes(String(movement.movement_type).toLowerCase())) continue;
+                const qty = Math.abs(Number(movement.quantity || 0));
+                salesByDay.set(moveDate, (salesByDay.get(moveDate) || 0) + qty);
+              }
+              const bucketSize =
+                dateRange === "7" ? 1 :
+                dateRange === "30" ? 3 :
+                dateRange === "90" ? 10 :
+                Math.max(1, Math.ceil(dayKeys.length / 120));
+              const points = [];
+              for (let i = 0; i < dayKeys.length; i += bucketSize) {
+                const chunk = dayKeys.slice(i, i + bucketSize);
+                let ordered = 0;
+                let sales = 0;
+                for (const key of chunk) {
+                  ordered += orderedByDay.get(key) || 0;
+                  sales += salesByDay.get(key) || 0;
+                }
+                points.push({ key: chunk[0], endKey: chunk[chunk.length - 1], ordered, sales });
+              }
+              const maxUnits = Math.max(1, ...points.map((point) => Math.max(point.ordered, point.sales)));
+              const chartHeight = 315;
+              const orderedColor = "var(--accent)";
+              const salesColor = "var(--accent)";
+              return (
+                <div style={{ marginTop: "12px", padding: "12px", background: "var(--panel-strong, rgba(0,0,0,0.15))", border: "1px solid var(--border, rgba(0,0,0,0.1))", borderRadius: "var(--radius, 8px)", boxShadow: "var(--shadow, none)" }}>
+                  <div style={{ display: "flex", gap: "8px", alignItems: "stretch" }}>
+                    <div style={{ position: "relative", width: "44px", fontSize: "0.75rem", color: "var(--muted)" }}>
+                      <div style={{ position: "absolute", top: 0, left: 0 }}>Units</div>
+                      <div style={{ position: "absolute", top: "4px", right: 0 }}>{maxUnits}</div>
+                      <div style={{ position: "absolute", top: "50%", right: 0, transform: "translateY(-50%)" }}>{Math.round(maxUnits / 2)}</div>
+                      <div style={{ position: "absolute", bottom: 0, right: 0 }}>0</div>
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0, overflowX: "auto" }}>
+                      <div title="hover bars for details" style={{ display: "flex", alignItems: "flex-end", gap: "2px", height: `${chartHeight}px`, padding: "4px", background: "var(--panel, rgba(0,0,0,0.08))", borderRadius: "6px" }}>
+                      {points.map((point) => {
+                        const orderedHeight = (point.ordered / maxUnits) * chartHeight;
+                        const salesHeight = (point.sales / maxUnits) * chartHeight;
+                        const totalHeightBar = Math.max(orderedHeight, salesHeight);
+                        return (
+                          <div key={point.key} title={`${point.key}${point.endKey && point.endKey !== point.key ? ` to ${point.endKey}` : ""}: ordered ${point.ordered}, sales ${point.sales}`} style={{ flex: "1 0 6px", minWidth: "6px", position: "relative", height: "100%" }}>
+                            <div style={{ position: "absolute", left: "50%", width: "8px", transform: "translateX(-50%)", bottom: 0, height: `${totalHeightBar}px`, background: orderedColor, opacity: 0.35 }} />
+                            <div style={{ position: "absolute", left: "50%", width: "8px", transform: "translateX(-50%)", bottom: 0, height: `${salesHeight}px`, background: salesColor, filter: "hue-rotate(180deg)" }} />
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <div style={{ display: "flex", gap: "2px", padding: "0 4px 4px", marginTop: "4px" }}>
+                      {points.map((point) => (
+                        <div key={`${point.key}-date`} style={{ flex: "1 0 6px", minWidth: "6px", textAlign: "center", fontSize: "0.6rem", color: "var(--muted)", whiteSpace: "nowrap", overflow: "hidden" }}>
+                          {point.key.slice(5)}
+                        </div>
+                      ))}
+                    </div>
+                    <div style={{ display: "flex", gap: "2px", padding: "0 4px 4px" }}>
+                      {points.map((point) => (
+                        <div key={`${point.key}-value`} style={{ flex: "1 0 6px", minWidth: "6px", textAlign: "center", fontSize: "0.6rem", color: "var(--muted)", whiteSpace: "nowrap", overflow: "hidden" }}>
+                          {point.ordered || point.sales ? `${point.ordered}/${point.sales}` : ""}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  </div>
+                  <div style={{ display: "flex", gap: "12px", marginTop: "8px", fontSize: "0.75rem" }}>
+                    <span><span style={{ display: "inline-block", width: "10px", height: "10px", background: orderedColor, opacity: 0.35 }} /> Ordered</span>
+                    <span><span style={{ display: "inline-block", width: "10px", height: "10px", background: salesColor, filter: "hue-rotate(180deg)" }} /> Sales</span>
+                  </div>
+                  <p style={{ marginTop: "6px", fontSize: "0.75rem", opacity: 0.8 }}>Y-axis: units ({maxUnits} max)</p>
+                </div>
+              );
+            })()}
+            <div className="edit-modal-actions" style={{ marginTop: "12px" }}>
+              <button type="button" onClick={() => setStatsProduct(null)}>Close</button>
+            </div>
+          </div>
+        </div>
+      )}
       {editingId && editForm && (
         <div className="edit-modal-overlay">
           <div className="edit-modal-card">

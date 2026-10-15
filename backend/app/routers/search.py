@@ -53,13 +53,30 @@ def search(q: str = Query(default=""), db: Session = Depends(get_db)):
         )
     ).all()
 
-    orders = db.query(models.Order).filter(
-        or_(
-            models.Order.placed_by.ilike(like),
-            models.Order.tracking_number.ilike(like),
-            models.Order.status.ilike(like),
-        )
-    ).all()
+    matching_product_ids = [
+        product.id
+        for product in db.query(models.Product).filter(
+            or_(models.Product.sku.ilike(like), models.Product.name.ilike(like))
+        ).all()
+    ]
+    matching_order_ids = []
+    if matching_product_ids:
+        matching_order_ids = [
+            item.order_id
+            for item in db.query(models.OrderItem).filter(
+                models.OrderItem.product_id.in_(matching_product_ids)
+            ).all()
+        ]
+
+    order_filters = [
+        models.Order.placed_by.ilike(like),
+        models.Order.tracking_number.ilike(like),
+        models.Order.status.ilike(like),
+    ]
+    if matching_order_ids:
+        order_filters.append(models.Order.id.in_(matching_order_ids))
+
+    orders = db.query(models.Order).filter(or_(*order_filters)).all()
 
     order_results = []
     for order in orders:

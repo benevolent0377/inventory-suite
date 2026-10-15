@@ -19,6 +19,7 @@ export default function OrdersPage() {
   const [items, setItems] = useState([{ sku: "", quantity: 1, expected: "", search: "" }]);
   const [searchPopupIndex, setSearchPopupIndex] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
+const [orderStatusFilter, setOrderStatusFilter] = useState("all");
 
   useEffect(() => {
     if (!placedBy && users.length) {
@@ -120,6 +121,7 @@ export default function OrdersPage() {
       <h2>Orders</h2>
       {error && <p className="error">{error}</p>}
       <TabbedCard
+        defaultTab={searchParams.get("tab") === "create" ? 0 : 1}
         tabs={[
           {
             label: "Create Order",
@@ -188,28 +190,50 @@ export default function OrdersPage() {
             label: "Orders",
             content: (
               <div>
+      <div className="orders-filter">
+        <label>Status
+          <select value={orderStatusFilter} onChange={(event) => setOrderStatusFilter(event.target.value)}>
+            <option value="all">All</option>
+            <option value="fulfilled">Fulfilled</option>
+            <option value="unfulfilled">Unfulfilled</option>
+          </select>
+        </label>
+      </div>
 
-
-      {(searchParams.get("q")
-        ? orders.filter((order) =>
-            [
-              order.placed_by,
-              order.vendor_name,
-              order.tracking_number,
-              order.fulfilled ? "fulfilled" : "unfulfilled",
-              ...(order.items || []).map((item) => `${item.product_sku} ${item.product_name}`),
-            ]
-              .filter(Boolean)
-              .join(" ")
-              .toLowerCase()
-              .includes((searchParams.get("q") || "").toLowerCase()),
-          )
-        : orders
-      ).map((order) => (
+      {orders
+        .filter((order) => {
+          if (orderStatusFilter === "fulfilled") return order.fulfilled;
+          if (orderStatusFilter === "unfulfilled") return !order.fulfilled;
+          return true;
+        })
+        .filter((order) => {
+          const query = (searchParams.get("q") || "").toLowerCase();
+          if (!query) return true;
+          return [
+            order.placed_by,
+            order.vendor_name,
+            order.tracking_number,
+            order.fulfilled ? "fulfilled" : "unfulfilled",
+            ...(order.items || []).map((item) => `${item.product_sku} ${item.product_name}`),
+          ]
+            .filter(Boolean)
+            .join(" ")
+            .toLowerCase()
+            .includes(query);
+        })
+        .map((order) => (
         <div key={order.id} className="order-card">
-          <h3>Order #{order.id}</h3>
-          <p>{order.placed_by} | {order.vendor_name || "No vendor"} | {order.tracking_number || "No tracking"} | total {formatMoney(order.total_cost)} | {order.fulfilled ? "Fulfilled" : "Unfulfilled"}</p>
-          <p>Checking an item adds its quantity to stock.</p>
+          <div className="order-card-header">
+            <h3>Order #{order.id}</h3>
+            <span className={`order-status ${order.fulfilled ? "fulfilled" : "open"}`}>{order.fulfilled ? "Fulfilled" : "Unfulfilled"}</span>
+          </div>
+          <div className="order-meta">
+            <span><strong>Placed by</strong> {order.placed_by}</span>
+            <span><strong>Vendor</strong> {order.vendor_name || "No vendor"}</span>
+            <span><strong>Tracking</strong> {order.tracking_number || "No tracking"}</span>
+            <span><strong>Total</strong> {formatMoney(order.total_cost)}</span>
+          </div>
+          <p className="order-hint">Checking an item adds its quantity to stock.</p>
           <table className="data-table">
             <thead><tr><th>Item</th><th>Qty</th><th>Expected Arrival</th><th>Checked In</th></tr></thead>
             <tbody>

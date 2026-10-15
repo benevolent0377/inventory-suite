@@ -2,6 +2,7 @@ import { NavLink } from "react-router-dom";
 import { appRoutes } from "../../../routes/appRoutes";
 import { Boxes } from "lucide-react";
 import "./Sidebar.css";
+import GlobalSearchBar from "../../search/GlobalSearchBar";
 
 export function Sidebar() {
   const isAdmin = (() => {
@@ -20,10 +21,14 @@ export function Sidebar() {
         <div className="logo-mark"><Boxes size={18} /></div>
         <div className="text-wrapper">
           <p className="title">Inventory Suite</p>
-          <p className="version-tag">BETA 1.3.1</p>
+          <p className="version-tag">BETA 2.5.2</p>
         </div>
       </div>
       <div className="sidebar-divider" />
+
+      <div className="sidebar-search">
+        <GlobalSearchBar />
+      </div>
 
       <nav className="sidebar-items">
         {visibleRoutes.map((route) => {

@@ -1,15 +1,17 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { request } from "../api/client";
 import TabbedCard from "../components/ui/TabbedCard";
 import GlobalSearchBar from "../components/search/GlobalSearchBar";
 import { formatMoney } from "../utils/currency";
 
 export default function DashboardPage() {
-  const [counts, setCounts] = useState({ products: 0, openOrders: 0, backorderItems: 0, shortageItems: 0, salesNet: 0, salesGross: 0, orderCostMonth: 0 });
+  const [counts, setCounts] = useState({ products: 0, openOrders: 0, closedOrdersMonth: 0, backorderItems: 0, shortageItems: 0, salesNet: 0, salesGross: 0, orderCostMonth: 0 });
   const [orders, setOrders] = useState([]);
   const [logistics, setLogistics] = useState({ total_items: 0, total_on_hand: 0, total_inventory_cost: 0, items: [] });
   const [compact, setCompact] = useState(window.innerWidth < 1000);
   const [activeUser, setActiveUser] = useState("");
+  const navigate = useNavigate();
 
   useEffect(() => {
     let active = true;
@@ -22,9 +24,15 @@ export default function DashboardPage() {
         request("/api/users"),
       ]);
       if (active) {
+        const nowForCounts = new Date();
         setCounts({
           products: products.length,
           openOrders: orderData.filter((order) => !order.fulfilled).length,
+          closedOrdersMonth: orderData.filter((order) => {
+            if (!order.fulfilled) return false;
+            const date = new Date(order.order_date || order.created_at);
+            return date.getMonth() === nowForCounts.getMonth() && date.getFullYear() === nowForCounts.getFullYear();
+          }).length,
           backorderItems: logisticsData.items.filter((item) => item.on_hand === 0 && item.required_backstock > 0).length,
           shortageItems: logisticsData.items.filter((item) => item.shortage > 0 && item.on_hand > 0).length,
           salesNet: salesData.net_sales || 0,
@@ -64,10 +72,16 @@ export default function DashboardPage() {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  const sortedOrders = [...orders].sort((a, b) => {
-    if (a.fulfilled !== b.fulfilled) return a.fulfilled ? 1 : -1;
-    return new Date(b.order_date || b.created_at).getTime() - new Date(a.order_date || a.created_at).getTime();
-  });
+  const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
+  const sortedOrders = [...orders]
+    .filter((order) => {
+      const time = new Date(order.order_date || order.created_at).getTime();
+      return time >= thirtyDaysAgo && time <= Date.now();
+    })
+    .sort((a, b) => {
+      if (a.fulfilled !== b.fulfilled) return a.fulfilled ? 1 : -1;
+      return new Date(b.order_date || b.created_at).getTime() - new Date(a.order_date || a.created_at).getTime();
+    });
 
   const orderIndex = (
     <div className="dashboard-panel">
@@ -86,6 +100,9 @@ export default function DashboardPage() {
           ))}
         </tbody>
       </table>
+      <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "8px" }}>
+        <button type="button" onClick={() => navigate("/orders?tab=orders")}>See more</button>
+      </div>
     </div>
   );
 
@@ -114,6 +131,9 @@ export default function DashboardPage() {
           ))}
         </tbody>
       </table>
+      <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "8px" }}>
+        <button type="button" onClick={() => navigate("/stock")}>See more</button>
+      </div>
     </div>
   );
 
@@ -123,7 +143,7 @@ export default function DashboardPage() {
       <h2>Dashboard</h2>
       <div className="stat-grid">
         <div className="stat-card"><span>Products</span><strong>{counts.products}</strong></div>
-        <div className="stat-card"><span>Open Orders</span><strong>{counts.openOrders}</strong></div>
+        <div className="stat-card"><span>Orders</span><div className="sales-values"><div><span className="sales-label">Open</span><strong>{counts.openOrders}</strong></div><div><span className="sales-label">Closed</span><strong>{counts.closedOrdersMonth}</strong></div></div></div>
         <div className="stat-card"><div className="sales-values"><div><span className="sales-label">Backorder</span><strong>{counts.backorderItems}</strong></div><div><span className="sales-label">Shortage</span><strong>{counts.shortageItems}</strong></div></div></div>
         <div className="stat-card sales-card"><span>Sales This Month</span><div className="sales-values"><div><span className="sales-label">Net</span><strong>{formatMoney(counts.salesNet)}</strong></div><div><span className="sales-label">Gross</span><strong>{formatMoney(counts.salesGross)}</strong></div></div></div>
         <div className="stat-card"><span>Order Cost This Month</span><strong>{formatMoney(counts.orderCostMonth)}</strong></div>

@@ -1,11 +1,11 @@
 import { useState } from "react";
 
-export default function TabbedCard({ tabs }) {
-  const [active, setActive] = useState(0);
+export default function TabbedCard({ tabs, style, className, defaultTab = 0 }) {
+  const [active, setActive] = useState(defaultTab);
   const current = tabs[active] || tabs[0];
 
   return (
-    <section className="tabbed-card">
+    <section className={`tabbed-card${className ? ` ${className}` : ""}`} style={style}>
       <div className="tab-list">
         {tabs.map((tab, index) => (
           <button
