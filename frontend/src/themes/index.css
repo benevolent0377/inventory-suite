@@ -1526,3 +1526,12 @@ html[data-reduce-motion="true"] *::after {
   width: 0;
   height: 0;
 }
+
+.dashboard-panel,
+.order-card,
+.edit-modal-card,
+.tabbed-card .tab-content,
+.settings-section {
+  overflow-x: auto;
+  max-width: 100%;
+}
