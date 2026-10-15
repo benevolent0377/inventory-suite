@@ -269,6 +269,7 @@ const [orderSort, setOrderSort] = useState("desc");
           </div>
           <div className="order-meta">
             <span><strong>Placed by</strong> {order.placed_by}</span>
+            <span><strong>Placed</strong> {order.order_date ? new Date(order.order_date).toLocaleString() : "-"}</span>
             <span><strong>Vendor</strong> {order.vendor_name || "No vendor"}</span>
             <span><strong>Tracking</strong> {order.tracking_number || "No tracking"}</span>
             <span><strong>Total</strong> {formatMoney(order.total_cost)}</span>
