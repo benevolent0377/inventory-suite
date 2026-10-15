@@ -295,6 +295,7 @@ export default function ProductsPage() {
               <td>
                 <button type="button" onClick={() => startEdit(product)}>Edit</button>
                 <button type="button" onClick={() => handleDelete(product.id)}>Delete</button>
+                <button type="button" onClick={() => openRemoveStock(product.sku)}>Sell Item</button>
                 <button type="button" onClick={() => openStats(product)}>Statistics</button>
               </td>
             </tr>
