@@ -1158,3 +1158,8 @@ textarea:focus {
     align-items: start;
   }
 }
+
+.edit-modal-card button,
+.edit-modal-card input {
+  margin: 5px;
+}
