@@ -225,7 +225,6 @@ export default function OrdersPage() {
           },
         ]}
       />
-    </div>
       {searchPopupIndex !== null && (
         <div className="edit-modal-overlay" onClick={() => setSearchPopupIndex(null)}>
           <div className="edit-modal-card" onClick={(event) => event.stopPropagation()}>
@@ -245,5 +244,6 @@ export default function OrdersPage() {
           </div>
         </div>
       )}
+    </div>
   );
 }
