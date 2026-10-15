@@ -126,22 +126,27 @@ const [orderStatusFilter, setOrderStatusFilter] = useState("all");
           {
             label: "Create Order",
             content: (
-              <form className="form-grid" onSubmit={handleSubmit}>
-        <label>Placed By
-          <select value={placedBy} onChange={(e) => setPlacedBy(e.target.value)} required>
-            <option value="">Select user</option>
-            {users.map((user) => <option key={user.id} value={user.name}>{user.name}</option>)}
-          </select>
-        </label>
-        <label>Vendor
-          <select value={vendorId} onChange={(e) => setVendorId(e.target.value)}>
-            <option value="">None</option>
-            {vendors.map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}
-          </select>
-        </label>
-        <label>Tracking<input value={tracking} onChange={(e) => setTracking(e.target.value)} /></label>
-        <div className="order-items-editor">
-          <p>Items</p>
+              <form className="order-create-form" onSubmit={handleSubmit}>
+        <div className="order-create-left">
+          <label>Placed By
+            <select value={placedBy} onChange={(e) => setPlacedBy(e.target.value)} required>
+              <option value="">Select user</option>
+              {users.map((user) => <option key={user.id} value={user.name}>{user.name}</option>)}
+            </select>
+          </label>
+          <label>Vendor
+            <select value={vendorId} onChange={(e) => setVendorId(e.target.value)}>
+              <option value="">None</option>
+              {vendors.map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}
+            </select>
+          </label>
+          <label>Tracking<input value={tracking} onChange={(e) => setTracking(e.target.value)} /></label>
+          <button type="submit">Create Order</button>
+        </div>
+        <div className="order-create-right">
+          <div className="order-items-editor">
+            <p>Items</p>
+            <div className="order-items-scroll">
           {items.map((item, index) => (
             <div key={index} className="order-item-card">
               <div className="order-item-title">
@@ -183,8 +188,9 @@ const [orderStatusFilter, setOrderStatusFilter] = useState("all");
             <button type="button" onClick={addItem}>Add Item Row</button>
             {items.length > 2 && <button type="button" onClick={() => removeItem(items.length - 1)}>Delete Item Row</button>}
           </div>
+            </div>
+          </div>
         </div>
-        <button type="submit">Create Order</button>
           </form>
             ),
           },

@@ -138,7 +138,7 @@ export default function DashboardPage() {
   );
 
   return (
-    <div className="page">
+    <div className="page dashboard-page">
       <h1 className="dashboard-greeting">Hello, {activeUser}</h1>
       <h2>Dashboard</h2>
       <div className="stat-grid">
