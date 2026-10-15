@@ -56,7 +56,7 @@ export default function OrdersPage() {
   }
 
   function removeItem(index) {
-    setItems((current) => (current.length <= 1 ? [{ sku: "", quantity: 1, expected: "", search: "" }] : current.filter((_, i) => i !== index)));
+    setItems((current) => (current.length <= 1 ? current : current.filter((_, i) => i !== index)));
   }
 
   async function handleSubmit(event) {
@@ -158,6 +158,11 @@ export default function OrdersPage() {
                     </svg>
                   </button>
                 </div>
+                {index > 0 && items.length > 1 && (
+                  <button type="button" onClick={() => removeItem(index)} aria-label="Remove item row" style={{ flex: "0 0 auto" }}>
+                    &times;
+                  </button>
+                )}
                 <label>
                   Qty
                   <input type="number" min="1" value={item.quantity} onChange={(e) => updateItem(index, "quantity", e.target.value)} />
