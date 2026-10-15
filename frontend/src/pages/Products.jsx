@@ -344,8 +344,8 @@ export default function ProductsPage() {
                         const totalHeightBar = Math.max(orderedHeight, salesHeight);
                         return (
                           <div key={point.key} title={`${point.key}${point.endKey && point.endKey !== point.key ? ` to ${point.endKey}` : ""}: ordered ${point.ordered}, sales ${point.sales}`} style={{ flex: "1 0 6px", minWidth: "6px", position: "relative", height: "100%" }}>
-                            <div style={{ position: "absolute", left: "50%", width: "8px", transform: "translateX(-50%)", bottom: 0, height: `${totalHeightBar}px`, background: orderedColor, opacity: 0.35 }} />
-                            <div style={{ position: "absolute", left: "50%", width: "8px", transform: "translateX(-50%)", bottom: 0, height: `${salesHeight}px`, background: salesColor, filter: "hue-rotate(180deg)" }} />
+                            <div style={{ position: "absolute", left: "calc(50% - 6px)", width: "6px", bottom: 0, height: `${totalHeightBar}px`, background: orderedColor, opacity: 0.35 }} />
+                            <div style={{ position: "absolute", left: "50%", width: "6px", bottom: 0, height: `${salesHeight}px`, background: salesColor, filter: "hue-rotate(180deg)" }} />
                           </div>
                         );
                       })}
