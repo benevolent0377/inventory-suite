@@ -1512,8 +1512,7 @@ html[data-reduce-motion="true"] *::after {
 .content,
 .content-wrapper,
 .page,
-.menu-bar-container,
-.sidebar {
+.menu-bar-container {
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
@@ -1522,8 +1521,7 @@ html[data-reduce-motion="true"] *::after {
 .content::-webkit-scrollbar,
 .content-wrapper::-webkit-scrollbar,
 .page::-webkit-scrollbar,
-.menu-bar-container::-webkit-scrollbar,
-.sidebar::-webkit-scrollbar {
+.menu-bar-container::-webkit-scrollbar {
   display: none;
   width: 0;
   height: 0;

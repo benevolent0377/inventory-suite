@@ -69,9 +69,10 @@
   align-items: center;
   gap: 12px;
   width: 100%;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   min-width: 0;
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: hidden;
 }
 
 .logo-container,
