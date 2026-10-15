@@ -77,13 +77,15 @@
 .logo-container,
 .sidebar-divider {
   order: -1;
+  flex: 0 0 auto;
+  align-self: center;
 }
 
 .sidebar-items {
   order: 1;
 }
 
-@media (max-width: 1250px) {
+@media (max-width: 750px) {
   .sidebar-search {
     flex: 1 1 100%;
     order: 0;
