@@ -3,6 +3,7 @@ import { request } from "../api/client";
 import { useSearchParams } from "react-router-dom";
 import TabbedCard from "../components/ui/TabbedCard";
 import { formatMoney } from "../utils/currency";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { notify } from "../utils/notify";
 import { confirm } from "../utils/confirm";
 import { playPopup } from "../utils/sound";
@@ -35,7 +36,8 @@ export default function ProductsPage() {
   const [statsOrders, setStatsOrders] = useState([]);
   const [statsMovements, setStatsMovements] = useState([]);
   const [statsOnHand, setStatsOnHand] = useState(0);
-  const [statsChart, setStatsChart] = useState("");
+  const [statsPoints, setStatsPoints] = useState([]);
+  const [statsMaxUnits, setStatsMaxUnits] = useState(1);
   const [statsChartLoading, setStatsChartLoading] = useState(false);
   const [statsLoading, setStatsLoading] = useState(false);
   const [statsError, setStatsError] = useState("");
@@ -123,7 +125,8 @@ export default function ProductsPage() {
     setStatsMovements([]);
     setStatsOnHand(0);
     setStatsError("");
-    setStatsChart("");
+    setStatsPoints([]);
+    setStatsMaxUnits(1);
     setStatsChartLoading(true);
     setDateRange("30");
     try {
@@ -140,9 +143,12 @@ export default function ProductsPage() {
     let active = true;
     setStatsChartLoading(true);
     setStatsError("");
-    request(`/api/products/${statsProduct.id}/stats/chart?date_range=${encodeURIComponent(dateRange)}`)
+    request(`/api/products/${statsProduct.id}/stats?date_range=${encodeURIComponent(dateRange)}`)
       .then((data) => {
-        if (active) setStatsChart(data.image || "");
+        if (active) {
+          setStatsPoints(Array.isArray(data.points) ? data.points : []);
+          setStatsMaxUnits(data.max_units || 1);
+        }
       })
       .catch((err) => {
         if (active) setStatsError(err.message);
@@ -275,11 +281,22 @@ export default function ProductsPage() {
             <p style={{ margin: "8px 0 0", fontSize: "0.85rem" }}>In inventory now: {statsOnHand}</p>
             {statsLoading && <p>Loading...</p>}
             {statsError && <p className="error">{statsError}</p>}
-            {!statsLoading && !statsError && statsChartLoading && <p>Loading chart...</p>}
-            {!statsLoading && !statsError && !statsChartLoading && statsChart && (
-              <img src={statsChart} alt="Statistics histogram" style={{ marginTop: "12px", width: "100%", borderRadius: "var(--radius)" }} />
+            {statsChartLoading && <p>Loading chart...</p>}
+            {!statsLoading && !statsError && !statsChartLoading && statsPoints.length > 0 && (
+              <div style={{ marginTop: "12px", height: "360px" }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={statsPoints}>
+                    <XAxis dataKey="key" tickFormatter={(value) => String(value).slice(5)} interval={Math.max(1, Math.floor(statsPoints.length / 12))} />
+                    <YAxis domain={[0, statsMaxUnits]} />
+                    <Tooltip />
+                    <Legend />
+                    <Bar dataKey="ordered" name="Ordered" fill="#3b82f6" />
+                    <Bar dataKey="sales" name="Sales" fill="#dc2626" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
             )}
-            {!statsLoading && !statsError && !statsChartLoading && !statsChart && <p>No chart available.</p>}
+            {!statsLoading && !statsError && !statsChartLoading && statsPoints.length === 0 && <p>No chart available.</p>}
             <div className="edit-modal-actions" style={{ marginTop: "12px" }}>
               <button type="button" onClick={() => setStatsProduct(null)}>Close</button>
             </div>

@@ -4,6 +4,7 @@ import { request } from "../api/client";
 import TabbedCard from "../components/ui/TabbedCard";
 import GlobalSearchBar from "../components/search/GlobalSearchBar";
 import { formatMoney } from "../utils/currency";
+import { LineChart, Line, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { notify } from "../utils/notify";
 
 export default function DashboardPage() {
@@ -26,8 +27,8 @@ export default function DashboardPage() {
     setSnapshotGraphLoading(true);
     setSnapshotGraphImage("");
     try {
-      const data = await request(`/api/stock/sales/daily/chart?month=${encodeURIComponent(salesMonth)}`);
-      setSnapshotGraphImage(data.image || "");
+      const data = await request(`/api/stock/sales/daily?month=${encodeURIComponent(salesMonth)}`);
+      setSnapshotGraphData(data);
     } catch (err) {
       notify(err.message || "Unable to load graph");
       setSnapshotGraphOpen(false);
@@ -349,7 +350,20 @@ export default function DashboardPage() {
           <div className="edit-modal-card" onClick={(event) => event.stopPropagation()} style={{ maxWidth: "92vw", width: "760px", maxHeight: "90vh", overflow: "auto" }}>
             <h3>Sales vs Order Cost: {formatSalesMonth(salesMonth)}</h3>
             {snapshotGraphLoading && <p>Loading...</p>}
-            {!snapshotGraphLoading && snapshotGraphImage && <img src={snapshotGraphImage} alt="Sales versus order cost graph" style={{ width: "100%", borderRadius: "var(--radius)" }} />}
+            {!snapshotGraphLoading && snapshotGraphData?.days?.length && (
+              <div style={{ width: "100%", height: "320px", marginTop: "12px" }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={snapshotGraphData.days}>
+                    <XAxis dataKey="date" tickFormatter={(value) => String(value).slice(5)} />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Line type="monotone" dataKey="sales" name="Sales" stroke="#3b82f6" />
+                    <Line type="monotone" dataKey="order_cost" name="Order cost" stroke="#dc2626" />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            )}
             <div style={{ display: "flex", gap: "12px", marginTop: "8px", fontSize: "0.8rem" }}>
               <span><span style={{ display: "inline-block", width: "10px", height: "10px", background: "var(--accent)" }} /> Sales</span>
               <span><span style={{ display: "inline-block", width: "10px", height: "10px", background: "var(--danger)" }} /> Order cost</span>
