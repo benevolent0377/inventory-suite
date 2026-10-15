@@ -127,6 +127,13 @@ def checkin_item(
         raise HTTPException(status_code=404, detail="Order item not found")
 
     previous = item.checked_in
+    if checked_in:
+        now = datetime.utcnow()
+        expected = item.expected_arrival_date
+        if expected is not None and expected.tzinfo is not None:
+            expected = expected.replace(tzinfo=None)
+        if expected is None or expected < now:
+            item.expected_arrival_date = now
     item.checked_in = checked_in
 
     delta = 0.0

@@ -3,6 +3,7 @@ import { request } from "../api/client";
 import { useSearchParams } from "react-router-dom";
 import TabbedCard from "../components/ui/TabbedCard";
 import { notify } from "../utils/notify";
+import { confirm } from "../utils/confirm";
 
 import { formatMoney } from "../utils/currency";
 export default function OrdersPage() {
@@ -87,13 +88,24 @@ export default function OrdersPage() {
   }
 
   async function toggleCheckin(order, item) {
+    const nextChecked = !item.checked_in;
+    if (nextChecked && item.expected_arrival_date) {
+      const expected = new Date(item.expected_arrival_date);
+      const today = new Date();
+      const expectedDay = new Date(expected.getFullYear(), expected.getMonth(), expected.getDate());
+      const todayDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      if (todayDay < expectedDay) {
+        const ok = await confirm(`This item is not expected until ${expectedDay.toISOString().slice(0, 10)}. Check it in now?`);
+        if (!ok) return;
+      }
+    }
     try {
       await request(`/api/orders/${order.id}/items/${item.id}/checkin`, {
         method: "PATCH",
-        body: JSON.stringify({ checked_in: !item.checked_in }),
+        body: JSON.stringify({ checked_in: nextChecked }),
       });
       await load();
-      notify(item.checked_in ? "Item checked in; stock updated" : "Item checked out; stock updated");
+      notify(nextChecked ? "Item checked in; stock updated" : "Item checked out; stock updated");
     } catch (err) {
       setError(err.message);
     }
