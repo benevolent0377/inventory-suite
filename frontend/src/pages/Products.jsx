@@ -294,6 +294,7 @@ export default function ProductsPage() {
               <td>{product.last_price == null ? "-" : formatMoney(product.last_price)}</td>
               <td>{formatMoney(product.cost)}</td>
               <td>{product.required_backstock}</td>
+              <td>{logisticsByProductId[product.id]?.on_hand ?? 0}</td>
               <td>{product.order_overhead_days}</td>
               <td>{product.order_overhead_months}</td>
               <td>
