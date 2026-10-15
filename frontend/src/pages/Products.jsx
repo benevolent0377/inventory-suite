@@ -29,6 +29,12 @@ export default function ProductsPage() {
   const [vendors, setVendors] = useState([]);
   const [vendorFilter, setVendorFilter] = useState("");
   const [searchText, setSearchText] = useState("");
+  const [stock, setStock] = useState([]);
+  const [removeStockOpen, setRemoveStockOpen] = useState(false);
+  const [removeSku, setRemoveSku] = useState("");
+  const [removeQty, setRemoveQty] = useState(1);
+  const [removeReason, setRemoveReason] = useState("sale");
+  const [removePurpose, setRemovePurpose] = useState("sale");
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState(null);
@@ -45,12 +51,14 @@ export default function ProductsPage() {
   const [error, setError] = useState("");
 
   const load = async () => {
-    const [productData, vendorData] = await Promise.all([
+    const [productData, vendorData, stockData] = await Promise.all([
       request("/api/products"),
       request("/api/vendors"),
+      request("/api/stock"),
     ]);
     setProducts(productData);
     setVendors(vendorData);
+    setStock(stockData);
     if (vendorData.length) {
       setForm((current) => (current.vendor_id === "" ? { ...current, vendor_id: String(vendorData[0].id) } : current));
     }
@@ -185,6 +193,37 @@ export default function ProductsPage() {
     return matchesSearch && matchesVendor;
   });
 
+  const stockBySku = Object.fromEntries(stock.map((row) => [row.product_sku, row]));
+
+  function openRemoveStock(sku) {
+    setRemoveSku(sku);
+    setRemoveQty(1);
+    setRemoveReason("sale");
+    setRemovePurpose("sale");
+    setRemoveStockOpen(true);
+  }
+
+  async function submitRemoveStock(event) {
+    event.preventDefault();
+    setError("");
+    try {
+      await request("/api/stock/remove", {
+        method: "POST",
+        body: JSON.stringify({
+          product_sku: (removeSku || "").trim(),
+          quantity: Number(removeQty),
+          reason: removeReason || removePurpose,
+          liquidated: removePurpose === "liquidated",
+        }),
+      });
+      await load();
+      setRemoveStockOpen(false);
+      notify(removePurpose === "liquidated" ? "Stock liquidated" : "Stock removed");
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
   return (
     <div className="page">
       <h2>Items</h2>
@@ -230,7 +269,7 @@ export default function ProductsPage() {
             label: "Items",
             content: (
               <table className="data-table">
-        <thead><tr><th>SKU</th><th>Name</th><th>Description</th><th>Vendor</th><th>Price</th><th>Last Price</th><th>Cost</th><th>Required</th><th>Overhead Days</th><th>Overhead Months</th><th>Actions</th></tr></thead>
+        <thead><tr><th>SKU</th><th>Name</th><th>Description</th><th>Vendor</th><th>Price</th><th>Last Price</th><th>Cost</th><th>Required</th><th>On Hand</th><th>Reserved</th><th>Overhead Days</th><th>Overhead Months</th><th>Actions</th></tr></thead>
         <tbody>
           {visibleProducts.map((product) => (
             <tr key={product.id}>
@@ -333,6 +372,41 @@ export default function ProductsPage() {
         </div>
       )}
 
+      {removeStockOpen && (
+        <div className="edit-modal-overlay" onClick={() => setRemoveStockOpen(false)}>
+          <div className="edit-modal-card" onClick={(event) => event.stopPropagation()}>
+            <h3>Remove Stock</h3>
+            <form className="form-row" onSubmit={submitRemoveStock}>
+              <label>
+                Item
+                <select value={removeSku} onChange={(e) => setRemoveSku(e.target.value)} required>
+                  <option value="">Select item</option>
+                  {products.map((product) => <option key={product.id} value={product.sku}>{product.sku} - {product.name}</option>)}
+                </select>
+              </label>
+              <label>
+                Qty
+                <input type="number" min="1" value={removeQty} onChange={(e) => setRemoveQty(e.target.value)} required />
+              </label>
+              <label>
+                Reason
+                <input value={removeReason} onChange={(e) => setRemoveReason(e.target.value)} />
+              </label>
+              <label>
+                Purpose
+                <select value={removePurpose} onChange={(e) => setRemovePurpose(e.target.value)}>
+                  <option value="sale">Sale</option>
+                  <option value="liquidated">Liquidated</option>
+                </select>
+              </label>
+              <div style={{ display: "flex", gap: "0.5rem", width: "100%", marginTop: "0.5rem" }}>
+                <button type="submit">Remove Stock</button>
+                <button type="button" onClick={() => setRemoveStockOpen(false)}>Cancel</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
