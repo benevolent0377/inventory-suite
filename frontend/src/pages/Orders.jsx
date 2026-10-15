@@ -213,10 +213,10 @@ const [orderSort, setOrderSort] = useState("desc");
         </label>
         <label>Sort
           <select value={orderSort} onChange={(event) => setOrderSort(event.target.value)}>
-            <option value="desc">Descending</option>
             <option value="asc">Ascending</option>
-            <option value="tracking">Tracking No.</option>
-            <option value="id">Order ID</option>
+            <option value="desc">Descending</option>
+            <option value="newest">Newest</option>
+            <option value="oldest">Oldest</option>
           </select>
         </label>
         <label>Status
@@ -250,11 +250,16 @@ const [orderSort, setOrderSort] = useState("desc");
         .sort((a, b) => {
           const aDate = new Date(a.order_date || a.created_at).getTime();
           const bDate = new Date(b.order_date || b.created_at).getTime();
-          if (orderSort === "asc") return aDate - bDate;
-          if (orderSort === "desc") return bDate - aDate;
-          if (orderSort === "tracking") return String(a.tracking_number || "").localeCompare(String(b.tracking_number || ""));
-          if (orderSort === "id") return a.id - b.id;
-          return bDate - aDate;
+          if (orderSort === "newest") return bDate - aDate;
+          if (orderSort === "oldest") return aDate - bDate;
+          const direction = orderSort === "desc" ? -1 : 1;
+          const byId = a.id - b.id;
+          if (orderSearchField === "id") return byId * direction;
+          if (orderSearchField === "tracking") {
+            return String(a.tracking_number || "").localeCompare(String(b.tracking_number || "")) * direction;
+          }
+          if (byId !== 0) return byId * direction;
+          return String(a.tracking_number || "").localeCompare(String(b.tracking_number || "")) * direction;
         })
         .map((order) => (
         <div key={order.id} className="order-card">
