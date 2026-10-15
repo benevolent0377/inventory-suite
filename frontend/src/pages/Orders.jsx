@@ -220,13 +220,7 @@ const [orderSearchQuery, setOrderSearchQuery] = useState(searchParams.get("q") |
         .filter((order) => {
           const query = (orderSearchQuery || searchParams.get("q") || "").toLowerCase();
           if (!query) return true;
-          return [
-            order.placed_by,
-            order.vendor_name,
-            order.tracking_number,
-            order.fulfilled ? "fulfilled" : "unfulfilled",
-            ...(order.items || []).map((item) => `${item.product_sku} ${item.product_name}`),
-          ]
+          return [String(order.id), order.tracking_number]
             .filter(Boolean)
             .join(" ")
             .toLowerCase()
