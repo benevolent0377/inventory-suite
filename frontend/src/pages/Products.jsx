@@ -30,6 +30,7 @@ export default function ProductsPage() {
   const [vendorFilter, setVendorFilter] = useState("");
   const [searchText, setSearchText] = useState("");
   const [stock, setStock] = useState([]);
+  const [logistics, setLogistics] = useState([]);
   const [removeStockOpen, setRemoveStockOpen] = useState(false);
   const [removeSku, setRemoveSku] = useState("");
   const [removeQty, setRemoveQty] = useState(1);
@@ -51,14 +52,16 @@ export default function ProductsPage() {
   const [error, setError] = useState("");
 
   const load = async () => {
-    const [productData, vendorData, stockData] = await Promise.all([
+    const [productData, vendorData, stockData, logisticsData] = await Promise.all([
       request("/api/products"),
       request("/api/vendors"),
       request("/api/stock"),
+      request("/api/logistics"),
     ]);
     setProducts(productData);
     setVendors(vendorData);
     setStock(stockData);
+    setLogistics(logisticsData.items || logisticsData || []);
     if (vendorData.length) {
       setForm((current) => (current.vendor_id === "" ? { ...current, vendor_id: String(vendorData[0].id) } : current));
     }
@@ -194,6 +197,7 @@ export default function ProductsPage() {
   });
 
   const stockByProductId = Object.fromEntries(stock.map((row) => [row.product_id, row]));
+  const logisticsByProductId = Object.fromEntries((Array.isArray(logistics) ? logistics : (logistics.items || [])).map((item) => [item.product_id, item]));
 
   function openRemoveStock(sku) {
     setRemoveSku(sku);
