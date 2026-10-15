@@ -17,17 +17,17 @@ export default function DashboardPage() {
   const [snapshotGraphOpen, setSnapshotGraphOpen] = useState(false);
   const [snapshotGraphLoading, setSnapshotGraphLoading] = useState(false);
   const [snapshotGraphData, setSnapshotGraphData] = useState(null);
-  const snapshotGraphCanvasRef = useRef(null);
+  const [snapshotGraphImage, setSnapshotGraphImage] = useState("");
   const [logistics, setLogistics] = useState({ total_items: 0, total_on_hand: 0, total_inventory_cost: 0, items: [] });
   const [compact, setCompact] = useState(window.innerWidth < 1000);
   const [activeUser, setActiveUser] = useState("");
   async function openSnapshotGraph() {
     setSnapshotGraphOpen(true);
     setSnapshotGraphLoading(true);
-    setSnapshotGraphData(null);
+    setSnapshotGraphImage("");
     try {
-      const data = await request(`/api/stock/sales/daily?month=${encodeURIComponent(salesMonth)}`);
-      setSnapshotGraphData(data);
+      const data = await request(`/api/stock/sales/daily/chart?month=${encodeURIComponent(salesMonth)}`);
+      setSnapshotGraphImage(data.image || "");
     } catch (err) {
       notify(err.message || "Unable to load graph");
       setSnapshotGraphOpen(false);
@@ -349,7 +349,7 @@ export default function DashboardPage() {
           <div className="edit-modal-card" onClick={(event) => event.stopPropagation()} style={{ maxWidth: "92vw", width: "760px", maxHeight: "90vh", overflow: "auto" }}>
             <h3>Sales vs Order Cost: {formatSalesMonth(salesMonth)}</h3>
             {snapshotGraphLoading && <p>Loading...</p>}
-            {!snapshotGraphLoading && snapshotGraphData && <canvas ref={snapshotGraphCanvasRef} width={680} height={300} style={{ width: "100%", borderRadius: "var(--radius)", background: "var(--panel)" }} />}
+            {!snapshotGraphLoading && snapshotGraphImage && <img src={snapshotGraphImage} alt="Sales versus order cost graph" style={{ width: "100%", borderRadius: "var(--radius)" }} />}
             <div style={{ display: "flex", gap: "12px", marginTop: "8px", fontSize: "0.8rem" }}>
               <span><span style={{ display: "inline-block", width: "10px", height: "10px", background: "var(--accent)" }} /> Sales</span>
               <span><span style={{ display: "inline-block", width: "10px", height: "10px", background: "var(--danger)" }} /> Order cost</span>

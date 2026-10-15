@@ -1,3 +1,5 @@
+import base64
+import io
 from datetime import datetime, timedelta
 from typing import Optional
 
@@ -104,6 +106,35 @@ def daily_sales(month: Optional[str] = None, db: Session = Depends(get_db)):
         "days": days,
     }
 
+
+@router.get("/sales/daily/chart")
+def daily_sales_chart(month: Optional[str] = None, db: Session = Depends(get_db)):
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    data = daily_sales(month, db)
+    days = data["days"]
+    if not days:
+        raise HTTPException(status_code=404, detail="No sales data")
+
+    fig, ax = plt.subplots(figsize=(9, 4))
+    x = list(range(len(days)))
+    ax.plot(x, [float(d["sales"]) for d in days], color="#3b82f6", linewidth=2.5, label="Sales")
+    ax.plot(x, [float(d["order_cost"]) for d in days], color="#dc2626", linewidth=2.5, label="Order cost")
+    ax.set_xticks(x[::max(1, len(x) // 8)])
+    ax.set_xticklabels([days[i]["date"].split("-")[-1] for i in x[::max(1, len(x) // 8)]], fontsize=8)
+    ax.set_ylabel("Amount")
+    ax.set_title(f"Sales vs order cost: {data['month']}")
+    ax.legend()
+    fig.tight_layout()
+
+    buf = io.BytesIO()
+    fig.savefig(buf, format="png", dpi=120)
+    plt.close(fig)
+    buf.seek(0)
+    encoded = base64.b64encode(buf.read()).decode("ascii")
+    return {"image": f"data:image/png;base64,{encoded}"}
 @router.get("/sales/month")
 def monthly_sales(month: Optional[str] = None, db: Session = Depends(get_db)):
     if month:
