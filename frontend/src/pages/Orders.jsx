@@ -151,6 +151,11 @@ const [orderStatusFilter, setOrderStatusFilter] = useState("all");
             <div key={index} className="order-item-card">
               <div className="order-item-title">
                 <span>Item {index + 1}</span>
+                {index > 0 && items.length > 1 && (
+                  <button type="button" className="order-item-remove" onClick={() => removeItem(index)} aria-label="Remove item row">
+                    Remove
+                  </button>
+                )}
               </div>
               <div className="form-row order-item-fields">
                 <div style={{ display: "flex", alignItems: "flex-end", gap: "0.5rem", flex: "1 1 180px", minWidth: 0 }}>
