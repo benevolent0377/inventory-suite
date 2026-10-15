@@ -121,6 +121,7 @@ export default function ProductsPage() {
     setStatsMovements([]);
     setStatsOnHand(0);
     setStatsError("");
+    setDateRange("30");
     setStatsLoading(true);
      try {
        const [ordersData, movementsData, stockData] = await Promise.all([
