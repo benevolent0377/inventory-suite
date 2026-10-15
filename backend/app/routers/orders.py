@@ -99,6 +99,9 @@ def create_order(payload: schemas.OrderCreate, db: Session = Depends(get_db)):
         status="open",
     )
     if payload.order_date is not None:
+        placed_at = payload.order_date.replace(tzinfo=None) if payload.order_date.tzinfo else payload.order_date
+        if placed_at > datetime.utcnow():
+            raise HTTPException(status_code=400, detail="Order date cannot be in the future")
         order.order_date = payload.order_date
 
     db.add(order)

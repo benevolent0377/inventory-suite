@@ -234,7 +234,10 @@ def cmd_orders_create(args):
 
     order = models.Order(placed_by=args.placed_by, vendor_id=vendor_id, tracking_number=args.tracking or "", total_cost=total, status="open")
     if args.date:
-        order.order_date = datetime.fromisoformat(args.date)
+        placed_at = datetime.fromisoformat(args.date)
+        if placed_at > datetime.utcnow():
+            raise ValueError("Order date cannot be in the future")
+        order.order_date = placed_at
     db.add(order)
     db.flush()
     for item in db_items:
