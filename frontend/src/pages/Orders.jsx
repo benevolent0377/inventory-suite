@@ -205,10 +205,10 @@ const [orderSort, setOrderSort] = useState("newest");
         </label>
         <label>Sort
           <select value={orderSort} onChange={(event) => setOrderSort(event.target.value)}>
-            <option value="newest">Newest</option>
-            <option value="oldest">Oldest</option>
-            <option value="tracking">Tracking</option>
-            <option value="status">Status</option>
+            <option value="newest">Descending</option>
+            <option value="oldest">Ascending</option>
+            <option value="tracking">Tracking No.</option>
+            <option value="id">Order ID</option>
           </select>
         </label>
         <label>Status
@@ -240,7 +240,7 @@ const [orderSort, setOrderSort] = useState("newest");
           const bDate = new Date(b.order_date || b.created_at).getTime();
           if (orderSort === "oldest") return aDate - bDate;
           if (orderSort === "tracking") return String(a.tracking_number || "").localeCompare(String(b.tracking_number || ""));
-          if (orderSort === "status") return Number(a.fulfilled) - Number(b.fulfilled);
+          if (orderSort === "id") return a.id - b.id;
           return bDate - aDate;
         })
         .map((order) => (
