@@ -234,7 +234,7 @@ export default function OrdersPage() {
             <label>Search<input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} autoFocus /></label>
             <div style={{ maxHeight: "240px", overflow: "auto", marginTop: "0.5rem" }}>
               {orderProducts.filter((product) => [product.sku, product.name].join(" ").toLowerCase().includes(searchQuery.toLowerCase())).map((product) => (
-                <div key={product.id} className="form-row" style={{ alignItems: "center" }}>
+                <div key={product.id} className="form-row" style={{ alignItems: "center", margin: "0.5rem 0", padding: "0.5rem 0", borderBottom: "1px solid var(--border)" }}>
                   <span>{product.sku} - {product.name}</span>
                   <button type="button" onClick={() => { updateItem(searchPopupIndex, "sku", product.sku); setSearchPopupIndex(null); }}>Add</button>
                 </div>
