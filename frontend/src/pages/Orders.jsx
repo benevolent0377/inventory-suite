@@ -21,7 +21,8 @@ export default function OrdersPage() {
   const [searchQuery, setSearchQuery] = useState("");
 const [orderStatusFilter, setOrderStatusFilter] = useState("all");
 const [orderSearchQuery, setOrderSearchQuery] = useState(searchParams.get("q") || "");
-const [orderSort, setOrderSort] = useState("newest");
+const [orderSearchField, setOrderSearchField] = useState("all");
+const [orderSort, setOrderSort] = useState("desc");
 
   useEffect(() => {
     if (!placedBy && users.length) {
@@ -203,10 +204,17 @@ const [orderSort, setOrderSort] = useState("newest");
         <label>Search
           <input value={orderSearchQuery} onChange={(event) => setOrderSearchQuery(event.target.value)} placeholder="Search orders" />
         </label>
+        <label>Filter
+          <select value={orderSearchField} onChange={(event) => setOrderSearchField(event.target.value)}>
+            <option value="all">All fields</option>
+            <option value="id">Order ID</option>
+            <option value="tracking">Tracking No.</option>
+          </select>
+        </label>
         <label>Sort
           <select value={orderSort} onChange={(event) => setOrderSort(event.target.value)}>
-            <option value="newest">Newest</option>
-            <option value="oldest">Oldest</option>
+            <option value="desc">Descending</option>
+            <option value="asc">Ascending</option>
             <option value="tracking">Tracking No.</option>
             <option value="id">Order ID</option>
           </select>
@@ -229,7 +237,11 @@ const [orderSort, setOrderSort] = useState("newest");
         .filter((order) => {
           const query = (orderSearchQuery || searchParams.get("q") || "").toLowerCase();
           if (!query) return true;
-          return [String(order.id), order.tracking_number]
+          const candidates =
+            orderSearchField === "id" ? [String(order.id)] :
+            orderSearchField === "tracking" ? [order.tracking_number] :
+            [String(order.id), order.tracking_number];
+          return candidates
             .filter(Boolean)
             .join(" ")
             .toLowerCase()
@@ -238,7 +250,8 @@ const [orderSort, setOrderSort] = useState("newest");
         .sort((a, b) => {
           const aDate = new Date(a.order_date || a.created_at).getTime();
           const bDate = new Date(b.order_date || b.created_at).getTime();
-          if (orderSort === "oldest") return aDate - bDate;
+          if (orderSort === "asc") return aDate - bDate;
+          if (orderSort === "desc") return bDate - aDate;
           if (orderSort === "tracking") return String(a.tracking_number || "").localeCompare(String(b.tracking_number || ""));
           if (orderSort === "id") return a.id - b.id;
           return bDate - aDate;
