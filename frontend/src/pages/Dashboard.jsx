@@ -86,6 +86,15 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (!salesMonth) return;
+    const parts = salesMonth.split("-");
+    const year = Number(parts[0]);
+    const month = Number(parts[1]) - 1;
+    const orderCost = orders.reduce((sum, order) => {
+      const date = new Date(order.order_date || order.created_at);
+      if (date.getFullYear() === year && date.getMonth() === month) return sum + (order.total_cost || 0);
+      return sum;
+    }, 0);
+    setCounts((current) => ({ ...current, orderCostMonth: orderCost }));
     request(`/api/stock/sales/month?month=${encodeURIComponent(salesMonth)}`)
       .then((data) => {
         setCounts((current) => ({
@@ -95,7 +104,7 @@ export default function DashboardPage() {
         }));
       })
       .catch(() => {});
-  }, [salesMonth]);
+  }, [salesMonth, orders]);
 
   const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
   const sortedOrders = [...orders]
@@ -172,16 +181,23 @@ export default function DashboardPage() {
         <div className="stat-card"><div className="sales-values"><div><span className="sales-label">Backorder</span><strong>{counts.backorderItems}</strong></div><div><span className="sales-label">Shortage</span><strong>{counts.shortageItems}</strong></div></div></div>
         <div className="stat-card sales-card">
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px" }}>
-            <span>Sales</span>
-            <select value={salesMonth} onChange={(event) => setSalesMonth(event.target.value)} aria-label="Sales month">
+            <span>Monthly Snapshot</span>
+            <select value={salesMonth} onChange={(event) => setSalesMonth(event.target.value)} aria-label="Snapshot month">
               {salesMonths.map((month) => (
                 <option key={month} value={month}>{formatSalesMonth(month)}</option>
               ))}
             </select>
           </div>
-          <div className="sales-values"><div><span className="sales-label">Net</span><strong>{formatMoney(counts.salesNet)}</strong></div><div><span className="sales-label">Gross</span><strong>{formatMoney(counts.salesGross)}</strong></div></div>
+          <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+            <div style={{ flex: "1 1 120px" }}>
+              <div className="sales-label">Order Cost</div>
+              <strong>{formatMoney(counts.orderCostMonth)}</strong>
+            </div>
+            <div style={{ flex: "1 1 120px" }}>
+              <div className="sales-values"><div><span className="sales-label">Net</span><strong>{formatMoney(counts.salesNet)}</strong></div><div><span className="sales-label">Gross</span><strong>{formatMoney(counts.salesGross)}</strong></div></div>
+            </div>
+          </div>
         </div>
-        <div className="stat-card"><span>Order Cost This Month</span><strong>{formatMoney(counts.orderCostMonth)}</strong></div>
       </div>
 
       <div className="dashboard-search">
