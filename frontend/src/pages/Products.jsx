@@ -269,7 +269,7 @@ export default function ProductsPage() {
             label: "Items",
             content: (
               <table className="data-table">
-        <thead><tr><th>SKU</th><th>Name</th><th>Description</th><th>Vendor</th><th>Price</th><th>Last Price</th><th>Cost</th><th>Required</th><th>Overhead Days</th><th>Overhead Months</th><th>Actions</th></tr></thead>
+        <thead><tr><th>SKU</th><th>Name</th><th>Description</th><th>Vendor</th><th>Price</th><th>Last Price</th><th>Cost</th><th>Required</th><th>On Hand</th><th>Overhead Days</th><th>Overhead Months</th><th>Actions</th></tr></thead>
         <tbody>
           {visibleProducts.map((product) => (
             <tr key={product.id}>
