@@ -186,7 +186,6 @@ const [orderStatusFilter, setOrderStatusFilter] = useState("all");
           ))}
           <div className="form-row">
             <button type="button" onClick={addItem}>Add Item</button>
-            {items.length > 2 && <button type="button" onClick={() => removeItem(items.length - 1)}>Delete Item Row</button>}
           </div>
             </div>
           </div>
