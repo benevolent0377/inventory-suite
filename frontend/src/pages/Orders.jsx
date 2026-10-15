@@ -143,8 +143,16 @@ const [orderStatusFilter, setOrderStatusFilter] = useState("all");
         <div className="order-items-editor">
           <p>Items</p>
           {items.map((item, index) => (
-            <div key={index}>
-              <div className="form-row">
+            <div key={index} className="order-item-card">
+              <div className="order-item-title">
+                <span>Item {index + 1}</span>
+                {index > 0 && items.length > 1 && (
+                  <button type="button" className="order-item-remove" onClick={() => removeItem(index)} aria-label="Remove item row">
+                    Remove
+                  </button>
+                )}
+              </div>
+              <div className="form-row order-item-fields">
                 <div style={{ display: "flex", alignItems: "flex-end", gap: "0.5rem", flex: "1 1 180px", minWidth: 0 }}>
                   <label style={{ flex: 1, minWidth: 0 }}>
                     Item
@@ -153,18 +161,13 @@ const [orderStatusFilter, setOrderStatusFilter] = useState("all");
                       {orderProducts.map((p) => <option key={p.id} value={p.sku}>{p.sku}</option>)}
                     </select>
                   </label>
-                  <button type="button" onClick={() => { setSearchPopupIndex(index); setSearchQuery(""); }} aria-label="Search items" style={{ flex: "0 0 10%", display: "inline-flex", justifyContent: "center", alignItems: "center", whiteSpace: "nowrap", padding: "0 4px" }}>
+                  <button type="button" className="order-item-search" onClick={() => { setSearchPopupIndex(index); setSearchQuery(""); }} aria-label="Search items" style={{ flex: "0 0 10%", display: "inline-flex", justifyContent: "center", alignItems: "center", whiteSpace: "nowrap", padding: "0 4px" }}>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <circle cx="11" cy="11" r="8"></circle>
                       <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                     </svg>
                   </button>
                 </div>
-                {index > 0 && items.length > 1 && (
-                  <button type="button" onClick={() => removeItem(index)} aria-label="Remove item row" style={{ flex: "0 0 auto" }}>
-                    Remove
-                  </button>
-                )}
                 <label>
                   Qty
                   <input type="number" min="1" value={item.quantity} onChange={(e) => updateItem(index, "quantity", e.target.value)} />
@@ -174,7 +177,6 @@ const [orderStatusFilter, setOrderStatusFilter] = useState("all");
                   <input type="date" value={item.expected} onChange={(e) => updateItem(index, "expected", e.target.value)} />
                 </label>
               </div>
-              {index < items.length - 1 && <br />}
             </div>
           ))}
           <div className="form-row">

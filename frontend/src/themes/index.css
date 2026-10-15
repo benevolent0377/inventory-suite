@@ -1436,3 +1436,20 @@ html[data-reduce-motion="true"] *::after {
   animation: none !important;
   transform: none !important;
 }
+
+.order-item-card {
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--panel);
+  box-shadow: var(--shadow);
+  margin-bottom: 12px;
+}
+
+.order-item-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  font-weight: 700;
+}
