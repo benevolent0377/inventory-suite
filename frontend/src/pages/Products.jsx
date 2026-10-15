@@ -26,6 +26,8 @@ export default function ProductsPage() {
   const [searchParams] = useSearchParams();
   const [products, setProducts] = useState([]);
   const [vendors, setVendors] = useState([]);
+  const [vendorFilter, setVendorFilter] = useState("");
+  const [searchText, setSearchText] = useState("");
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState(null);
@@ -119,21 +121,30 @@ export default function ProductsPage() {
     };
   }
 
-  const query = (searchParams.get("q") || "").toLowerCase();
-  const visibleProducts = query
-    ? products.filter((product) =>
-        [product.sku, product.name, product.category, product.vendor_id, vendors.find((v) => v.id === product.vendor_id)?.name]
-          .filter(Boolean)
-          .join(" ")
-          .toLowerCase()
-          .includes(query),
-      )
-    : products;
+  const query = (searchText || searchParams.get("q") || "").toLowerCase();
+  const visibleProducts = products.filter((product) => {
+    const matchesSearch = !query || [product.sku, product.name, product.category, product.vendor_id, vendors.find((v) => v.id === product.vendor_id)?.name]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase()
+      .includes(query);
+    const matchesVendor = !vendorFilter || String(product.vendor_id) === String(vendorFilter);
+    return matchesSearch && matchesVendor;
+  });
 
   return (
     <div className="page">
       <h2>Items</h2>
       {error && <p className="error">{error}</p>}
+      <div className="form-row">
+        <label>Search<input value={searchText} onChange={(e) => setSearchText(e.target.value)} placeholder="Search items" /></label>
+        <label>Vendor
+          <select value={vendorFilter} onChange={(e) => setVendorFilter(e.target.value)}>
+            <option value="">All vendors</option>
+            {vendors.map((vendor) => <option key={vendor.id} value={vendor.id}>{vendor.name}</option>)}
+          </select>
+        </label>
+      </div>
       <TabbedCard
         tabs={[
           {

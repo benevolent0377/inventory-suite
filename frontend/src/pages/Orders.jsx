@@ -16,7 +16,7 @@ export default function OrdersPage() {
   const [placedBy, setPlacedBy] = useState(() => localStorage.getItem("inventory-user") || "");
   const [vendorId, setVendorId] = useState("");
   const [tracking, setTracking] = useState("");
-  const [items, setItems] = useState([{ sku: "", quantity: 1, expected: "" }]);
+  const [items, setItems] = useState([{ sku: "", quantity: 1, expected: "", search: "" }]);
 
   useEffect(() => {
     if (!placedBy && users.length) {
@@ -50,11 +50,11 @@ export default function OrdersPage() {
   }
 
   function addItem() {
-    setItems([...items, { sku: "", quantity: 1, expected: "" }]);
+    setItems([...items, { sku: "", quantity: 1, expected: "", search: "" }]);
   }
 
   function removeItem(index) {
-    setItems((current) => (current.length <= 1 ? [{ sku: "", quantity: 1, expected: "" }] : current.filter((_, i) => i !== index)));
+    setItems((current) => (current.length <= 1 ? [{ sku: "", quantity: 1, expected: "", search: "" }] : current.filter((_, i) => i !== index)));
   }
 
   async function handleSubmit(event) {
@@ -79,7 +79,7 @@ export default function OrdersPage() {
       setPlacedBy("");
       setVendorId("");
       setTracking("");
-      setItems([{ sku: "", quantity: 1, expected: "" }]);
+      setItems([{ sku: "", quantity: 1, expected: "", search: "" }]);
       await load();
       notify("Order created");
     } catch (err) {
@@ -142,10 +142,14 @@ export default function OrdersPage() {
             <div key={index}>
               <div className="form-row">
                 <label>
+                  Search Items
+                  <input value={item.search || ""} onChange={(e) => updateItem(index, "search", e.target.value)} placeholder="Filter items" />
+                </label>
+                <label>
                   Item
                   <select value={item.sku} onChange={(e) => updateItem(index, "sku", e.target.value)}>
                     <option value="">Select item</option>
-                    {orderProducts.map((p) => <option key={p.id} value={p.sku}>{p.sku}</option>)}
+                    {orderProducts.filter((product) => !item.search || [product.sku, product.name].join(" ").toLowerCase().includes(String(item.search).toLowerCase())).map((p) => <option key={p.id} value={p.sku}>{p.sku}</option>)}
                   </select>
                 </label>
                 <label>
