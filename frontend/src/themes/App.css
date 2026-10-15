@@ -75,6 +75,18 @@
 }
 
 .sidebar-items {
+  order: 1;
+}
+
+@media (max-width: 1250px) {
+  .sidebar-search {
+    flex: 1 1 100%;
+    order: 0;
+    margin-bottom: 8px;
+  }
+}
+
+.sidebar-items {
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
