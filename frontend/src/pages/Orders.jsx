@@ -160,7 +160,7 @@ export default function OrdersPage() {
                 </div>
                 {index > 0 && items.length > 1 && (
                   <button type="button" onClick={() => removeItem(index)} aria-label="Remove item row" style={{ flex: "0 0 auto" }}>
-                    &times;
+                    Remove
                   </button>
                 )}
                 <label>
