@@ -21,6 +21,7 @@ export default function OrdersPage() {
   const [searchQuery, setSearchQuery] = useState("");
 const [orderStatusFilter, setOrderStatusFilter] = useState("all");
 const [orderSearchQuery, setOrderSearchQuery] = useState(searchParams.get("q") || "");
+const [orderSort, setOrderSort] = useState("newest");
 
   useEffect(() => {
     if (!placedBy && users.length) {
@@ -202,6 +203,14 @@ const [orderSearchQuery, setOrderSearchQuery] = useState(searchParams.get("q") |
         <label>Search
           <input value={orderSearchQuery} onChange={(event) => setOrderSearchQuery(event.target.value)} placeholder="Search orders" />
         </label>
+        <label>Sort
+          <select value={orderSort} onChange={(event) => setOrderSort(event.target.value)}>
+            <option value="newest">Newest</option>
+            <option value="oldest">Oldest</option>
+            <option value="tracking">Tracking</option>
+            <option value="status">Status</option>
+          </select>
+        </label>
         <label>Status
           <select value={orderStatusFilter} onChange={(event) => setOrderStatusFilter(event.target.value)}>
             <option value="all">All</option>
@@ -225,6 +234,14 @@ const [orderSearchQuery, setOrderSearchQuery] = useState(searchParams.get("q") |
             .join(" ")
             .toLowerCase()
             .includes(query);
+        })
+        .sort((a, b) => {
+          const aDate = new Date(a.order_date || a.created_at).getTime();
+          const bDate = new Date(b.order_date || b.created_at).getTime();
+          if (orderSort === "oldest") return aDate - bDate;
+          if (orderSort === "tracking") return String(a.tracking_number || "").localeCompare(String(b.tracking_number || ""));
+          if (orderSort === "status") return Number(a.fulfilled) - Number(b.fulfilled);
+          return bDate - aDate;
         })
         .map((order) => (
         <div key={order.id} className="order-card">
