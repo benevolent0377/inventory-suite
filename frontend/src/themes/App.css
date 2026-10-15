@@ -74,6 +74,11 @@
   overflow: hidden;
 }
 
+.logo-container,
+.sidebar-divider {
+  order: -1;
+}
+
 .sidebar-items {
   order: 1;
 }
