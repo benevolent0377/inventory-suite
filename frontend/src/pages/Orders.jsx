@@ -111,6 +111,8 @@ export default function OrdersPage() {
     }
   }
 
+  const orderProducts = vendorId ? products.filter((product) => String(product.vendor_id) === String(vendorId)) : products;
+
   return (
     <div className="page">
       <h2>Orders</h2>
@@ -143,7 +145,7 @@ export default function OrdersPage() {
                   Item
                   <select value={item.sku} onChange={(e) => updateItem(index, "sku", e.target.value)}>
                     <option value="">Select item</option>
-                    {products.map((p) => <option key={p.id} value={p.sku}>{p.sku}</option>)}
+                    {orderProducts.map((p) => <option key={p.id} value={p.sku}>{p.sku}</option>)}
                   </select>
                 </label>
                 <label>
