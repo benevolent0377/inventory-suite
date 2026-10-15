@@ -50,7 +50,7 @@ def logistics(db: Session = Depends(get_db)):
         slow_order = (product.cost or 0) >= 100
         urgency_weight = {"out_of_stock": 4, "critical": 3, "low": 2, "not_tracked": 1, "healthy": 0}.get(status, 0)
         urgency = float(max(1, urgency_weight * 5))
-        priority_score = urgency_weight * 100 + shortage + order_overhead_days * 10 + ((product.cost or 0) * (0.01 if slow_order else 0.05))
+        priority_score = urgency_weight * 100 + shortage + order_overhead_days + ((product.cost or 0) * (0.01 if slow_order else 0.05))
 
         vendor = vendor_by_id.get(product.vendor_id)
         items.append(
