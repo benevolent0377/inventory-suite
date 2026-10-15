@@ -6,7 +6,7 @@ import GlobalSearchBar from "../components/search/GlobalSearchBar";
 import { formatMoney } from "../utils/currency";
 
 export default function DashboardPage() {
-  const [counts, setCounts] = useState({ products: 0, openOrders: 0, closedOrdersMonth: 0, backorderItems: 0, shortageItems: 0, salesNet: 0, salesGross: 0, orderCostMonth: 0 });
+  const [counts, setCounts] = useState({ products: 0, openOrders: 0, closedOrders30: 0, backorderItems: 0, shortageItems: 0, salesNet: 0, salesGross: 0, orderCostMonth: 0 });
   const [orders, setOrders] = useState([]);
   const [salesMonth, setSalesMonth] = useState(() => {
     const now = new Date();
@@ -36,14 +36,21 @@ export default function DashboardPage() {
       ]);
       if (active) {
         const nowForCounts = new Date();
+        const thirtyDaysAgo = nowForCounts.getTime() - 30 * 24 * 60 * 60 * 1000;
         setSalesMonths(Array.isArray(monthList) ? monthList : []);
         setCounts({
           products: products.length,
-          openOrders: orderData.filter((order) => !order.fulfilled).length,
-          closedOrdersMonth: orderData.filter((order) => {
+          openOrders: orderData.filter((order) => {
+            if (order.fulfilled) return false;
+            const date = new Date(order.order_date || order.created_at);
+            const time = date.getTime();
+            return time >= thirtyDaysAgo && time <= nowForCounts.getTime();
+          }).length,
+          closedOrders30: orderData.filter((order) => {
             if (!order.fulfilled) return false;
             const date = new Date(order.order_date || order.created_at);
-            return date.getMonth() === nowForCounts.getMonth() && date.getFullYear() === nowForCounts.getFullYear();
+            const time = date.getTime();
+            return time >= thirtyDaysAgo && time <= nowForCounts.getTime();
           }).length,
           backorderItems: logisticsData.items.filter((item) => item.on_hand === 0 && item.required_backstock > 0).length,
           shortageItems: logisticsData.items.filter((item) => item.shortage > 0 && item.on_hand > 0).length,
@@ -176,9 +183,8 @@ export default function DashboardPage() {
       <h1 className="dashboard-greeting">Hello, {activeUser}</h1>
       <h2>Dashboard</h2>
       <div className="stat-grid">
-        <div className="stat-card"><span>Products</span><strong>{counts.products}</strong></div>
-        <div className="stat-card"><span>Orders</span><div className="sales-values"><div><span className="sales-label">Open</span><strong>{counts.openOrders}</strong></div><div><span className="sales-label">Closed</span><strong>{counts.closedOrdersMonth}</strong></div></div></div>
-        <div className="stat-card"><div className="sales-values"><div><span className="sales-label">Backorder</span><strong>{counts.backorderItems}</strong></div><div><span className="sales-label">Shortage</span><strong>{counts.shortageItems}</strong></div></div></div>
+        <div className="stat-card"><span>Products</span><div className="sales-values"><div><span className="sales-label">Products</span><strong>{counts.products}</strong></div><div><span className="sales-label">Backorder</span><strong>{counts.backorderItems}</strong></div><div><span className="sales-label">Shortage</span><strong>{counts.shortageItems}</strong></div></div></div>
+        <div className="stat-card"><span>Orders</span><div className="sales-values"><div><span className="sales-label">Open</span><strong>{counts.openOrders}</strong></div><div><span className="sales-label">Closed</span><strong>{counts.closedOrders30}</strong></div></div></div>
         <div className="stat-card sales-card">
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px" }}>
             <span>Monthly Snapshot</span>
