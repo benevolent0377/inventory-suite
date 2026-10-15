@@ -151,7 +151,7 @@ export default function OrdersPage() {
                   </select>
                 </label>
                 <button type="button" onClick={() => { setSearchPopupIndex(index); setSearchQuery(""); }} aria-label="Search items">
-                  &#128269;
+                  🔍
                 </button>
                 <label>
                   Qty
@@ -223,5 +223,24 @@ export default function OrdersPage() {
         ]}
       />
     </div>
+      {searchPopupIndex !== null && (
+        <div className="edit-modal-overlay" onClick={() => setSearchPopupIndex(null)}>
+          <div className="edit-modal-card" onClick={(event) => event.stopPropagation()}>
+            <h3>Search Items</h3>
+            <label>Search<input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} autoFocus /></label>
+            <div style={{ maxHeight: "240px", overflow: "auto", marginTop: "0.5rem" }}>
+              {orderProducts.filter((product) => [product.sku, product.name].join(" ").toLowerCase().includes(searchQuery.toLowerCase())).map((product) => (
+                <div key={product.id} className="form-row" style={{ alignItems: "center" }}>
+                  <span>{product.sku} - {product.name}</span>
+                  <button type="button" onClick={() => { updateItem(searchPopupIndex, "sku", product.sku); setSearchPopupIndex(null); }}>Add</button>
+                </div>
+              ))}
+            </div>
+            <div className="edit-modal-actions">
+              <button type="button" onClick={() => setSearchPopupIndex(null)}>Close</button>
+            </div>
+          </div>
+        </div>
+      )}
   );
 }
