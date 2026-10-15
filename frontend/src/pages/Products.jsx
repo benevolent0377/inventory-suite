@@ -375,7 +375,7 @@ export default function ProductsPage() {
       {removeStockOpen && (
         <div className="edit-modal-overlay" onClick={() => setRemoveStockOpen(false)}>
           <div className="edit-modal-card" onClick={(event) => event.stopPropagation()}>
-            <h3>Remove Stock</h3>
+            <h3>Sell Item</h3>
             <form className="form-row" onSubmit={submitRemoveStock}>
               <label>
                 Item
@@ -400,7 +400,7 @@ export default function ProductsPage() {
                 </select>
               </label>
               <div style={{ display: "flex", gap: "0.5rem", width: "100%", marginTop: "0.5rem" }}>
-                <button type="submit">Remove Stock</button>
+                <button type="submit">Sell Item</button>
                 <button type="button" onClick={() => setRemoveStockOpen(false)}>Cancel</button>
               </div>
             </form>
