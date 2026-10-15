@@ -236,7 +236,7 @@ export default function OrdersPage() {
               {orderProducts.filter((product) => [product.sku, product.name].join(" ").toLowerCase().includes(searchQuery.toLowerCase())).map((product) => (
                 <div key={product.id} className="form-row" style={{ alignItems: "center", justifyContent: "space-between", margin: "0.5rem 0", padding: "0.5rem 0", borderBottom: "1px solid var(--border)" }}>
                   <span>{product.sku} - {product.name}</span>
-                  <button type="button" onClick={() => { updateItem(searchPopupIndex, "sku", product.sku); setSearchPopupIndex(null); }}>Add</button>
+                  <button type="button" onClick={() => { updateItem(searchPopupIndex, "sku", product.sku); setSearchPopupIndex(null); }} style={{ marginLeft: "auto" }}>Add</button>
                 </div>
               ))}
             </div>
