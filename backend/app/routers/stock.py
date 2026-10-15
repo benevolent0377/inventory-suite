@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from .. import models, schemas
@@ -34,14 +34,35 @@ def list_stock(product_id: Optional[int] = None, db: Session = Depends(get_db)):
 
 
 
-@router.get("/sales/month")
-def monthly_sales(db: Session = Depends(get_db)):
+@router.get("/sales/months")
+def sales_months(db: Session = Depends(get_db)):
+    months = set()
+    for movement in db.query(models.Movement).filter(models.Movement.movement_type == "sale").all():
+        if movement.created_at:
+            months.add(movement.created_at.strftime("%Y-%m"))
     now = datetime.utcnow()
-    start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    months.add(now.strftime("%Y-%m"))
+    return sorted(months, reverse=True)
+
+
+@router.get("/sales/month")
+def monthly_sales(month: Optional[str] = None, db: Session = Depends(get_db)):
+    if month:
+        try:
+            selected = datetime.strptime(month, "%Y-%m")
+        except ValueError:
+            selected = datetime.utcnow().replace(day=1)
+    else:
+        selected = datetime.utcnow()
+    start = selected.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    if start.month == 12:
+        end = start.replace(year=start.year + 1, month=1)
+    else:
+        end = start.replace(month=start.month + 1)
     gross_sales = 0.0
     cost_of_goods_sold = 0.0
     for movement in db.query(models.Movement).filter(models.Movement.movement_type == "sale").all():
-        if movement.created_at and movement.created_at >= start:
+        if movement.created_at and start <= movement.created_at < end:
             product = db.get(models.Product, movement.product_id)
             quantity = abs(movement.quantity)
             gross_sales += quantity * (product.price or 0)

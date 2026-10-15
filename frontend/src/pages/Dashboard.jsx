@@ -8,23 +8,35 @@ import { formatMoney } from "../utils/currency";
 export default function DashboardPage() {
   const [counts, setCounts] = useState({ products: 0, openOrders: 0, closedOrdersMonth: 0, backorderItems: 0, shortageItems: 0, salesNet: 0, salesGross: 0, orderCostMonth: 0 });
   const [orders, setOrders] = useState([]);
+  const [salesMonth, setSalesMonth] = useState(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  });
+  const [salesMonths, setSalesMonths] = useState([]);
   const [logistics, setLogistics] = useState({ total_items: 0, total_on_hand: 0, total_inventory_cost: 0, items: [] });
   const [compact, setCompact] = useState(window.innerWidth < 1000);
   const [activeUser, setActiveUser] = useState("");
+  function formatSalesMonth(value) {
+    const parts = String(value || "").split("-");
+    if (parts.length !== 2) return value;
+    const date = new Date(Number(parts[0]), Number(parts[1]) - 1, 1);
+    return date.toLocaleString("default", { month: "short", year: "numeric" });
+  }
   const navigate = useNavigate();
 
   useEffect(() => {
     let active = true;
     async function load() {
-      const [products, orderData, logisticsData, salesData, users] = await Promise.all([
+      const [products, orderData, logisticsData, monthList, users] = await Promise.all([
         request("/api/products"),
         request("/api/orders"),
         request("/api/logistics"),
-        request("/api/stock/sales/month"),
+        request("/api/stock/sales/months"),
         request("/api/users"),
       ]);
       if (active) {
         const nowForCounts = new Date();
+        setSalesMonths(Array.isArray(monthList) ? monthList : []);
         setCounts({
           products: products.length,
           openOrders: orderData.filter((order) => !order.fulfilled).length,
@@ -35,8 +47,8 @@ export default function DashboardPage() {
           }).length,
           backorderItems: logisticsData.items.filter((item) => item.on_hand === 0 && item.required_backstock > 0).length,
           shortageItems: logisticsData.items.filter((item) => item.shortage > 0 && item.on_hand > 0).length,
-          salesNet: salesData.net_sales || 0,
-          salesGross: salesData.gross_sales || 0,
+          salesNet: 0,
+          salesGross: 0,
         });
         setOrders(orderData);
         setLogistics(logisticsData);
@@ -71,6 +83,19 @@ export default function DashboardPage() {
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
+
+  useEffect(() => {
+    if (!salesMonth) return;
+    request(`/api/stock/sales/month?month=${encodeURIComponent(salesMonth)}`)
+      .then((data) => {
+        setCounts((current) => ({
+          ...current,
+          salesNet: data.net_sales || 0,
+          salesGross: data.gross_sales || 0,
+        }));
+      })
+      .catch(() => {});
+  }, [salesMonth]);
 
   const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
   const sortedOrders = [...orders]
@@ -145,7 +170,17 @@ export default function DashboardPage() {
         <div className="stat-card"><span>Products</span><strong>{counts.products}</strong></div>
         <div className="stat-card"><span>Orders</span><div className="sales-values"><div><span className="sales-label">Open</span><strong>{counts.openOrders}</strong></div><div><span className="sales-label">Closed</span><strong>{counts.closedOrdersMonth}</strong></div></div></div>
         <div className="stat-card"><div className="sales-values"><div><span className="sales-label">Backorder</span><strong>{counts.backorderItems}</strong></div><div><span className="sales-label">Shortage</span><strong>{counts.shortageItems}</strong></div></div></div>
-        <div className="stat-card sales-card"><span>Sales This Month</span><div className="sales-values"><div><span className="sales-label">Net</span><strong>{formatMoney(counts.salesNet)}</strong></div><div><span className="sales-label">Gross</span><strong>{formatMoney(counts.salesGross)}</strong></div></div></div>
+        <div className="stat-card sales-card">
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px" }}>
+            <span>Sales</span>
+            <select value={salesMonth} onChange={(event) => setSalesMonth(event.target.value)} aria-label="Sales month">
+              {salesMonths.map((month) => (
+                <option key={month} value={month}>{formatSalesMonth(month)}</option>
+              ))}
+            </select>
+          </div>
+          <div className="sales-values"><div><span className="sales-label">Net</span><strong>{formatMoney(counts.salesNet)}</strong></div><div><span className="sales-label">Gross</span><strong>{formatMoney(counts.salesGross)}</strong></div></div>
+        </div>
         <div className="stat-card"><span>Order Cost This Month</span><strong>{formatMoney(counts.orderCostMonth)}</strong></div>
       </div>
 
