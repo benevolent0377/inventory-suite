@@ -20,6 +20,7 @@ export default function OrdersPage() {
   const [searchPopupIndex, setSearchPopupIndex] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
 const [orderStatusFilter, setOrderStatusFilter] = useState("all");
+const [orderSearchQuery, setOrderSearchQuery] = useState(searchParams.get("q") || "");
 
   useEffect(() => {
     if (!placedBy && users.length) {
@@ -198,6 +199,9 @@ const [orderStatusFilter, setOrderStatusFilter] = useState("all");
             content: (
               <div>
       <div className="orders-filter">
+        <label>Search
+          <input value={orderSearchQuery} onChange={(event) => setOrderSearchQuery(event.target.value)} placeholder="Search orders" />
+        </label>
         <label>Status
           <select value={orderStatusFilter} onChange={(event) => setOrderStatusFilter(event.target.value)}>
             <option value="all">All</option>
@@ -214,7 +218,7 @@ const [orderStatusFilter, setOrderStatusFilter] = useState("all");
           return true;
         })
         .filter((order) => {
-          const query = (searchParams.get("q") || "").toLowerCase();
+          const query = (orderSearchQuery || searchParams.get("q") || "").toLowerCase();
           if (!query) return true;
           return [
             order.placed_by,
