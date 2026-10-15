@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { request } from "../api/client";
 import TabbedCard from "../components/ui/TabbedCard";
@@ -17,6 +17,7 @@ export default function DashboardPage() {
   const [snapshotGraphOpen, setSnapshotGraphOpen] = useState(false);
   const [snapshotGraphLoading, setSnapshotGraphLoading] = useState(false);
   const [snapshotGraphData, setSnapshotGraphData] = useState(null);
+  const snapshotGraphCanvasRef = useRef(null);
   const [logistics, setLogistics] = useState({ total_items: 0, total_on_hand: 0, total_inventory_cost: 0, items: [] });
   const [compact, setCompact] = useState(window.innerWidth < 1000);
   const [activeUser, setActiveUser] = useState("");
@@ -162,6 +163,74 @@ export default function DashboardPage() {
       .catch(() => {});
   }, [salesMonth, orders]);
 
+  useEffect(() => {
+    if (!snapshotGraphOpen || !snapshotGraphData?.days?.length) return;
+    const canvas = snapshotGraphCanvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    const days = snapshotGraphData.days;
+    const width = canvas.width;
+    const height = canvas.height;
+    const pad = 44;
+    const maxVal = Math.max(1, ...days.flatMap((day) => [Number(day.sales || 0), Number(day.order_cost || 0)]));
+    const x = (index) => pad + (index / (days.length - 1 || 1)) * (width - pad * 2);
+    const y = (value) => height - pad - (Number(value || 0) / maxVal) * (height - pad * 2);
+    const root = getComputedStyle(document.documentElement);
+    const accent = root.getPropertyValue("--accent").trim() || "#3b82f6";
+    const danger = root.getPropertyValue("--danger").trim() || "#dc2626";
+    const muted = root.getPropertyValue("--muted").trim() || "#666";
+    const border = root.getPropertyValue("--border").trim() || "#ccc";
+
+    ctx.clearRect(0, 0, width, height);
+    ctx.fillStyle = root.getPropertyValue("--panel").trim() || "#fff";
+    ctx.fillRect(0, 0, width, height);
+
+    ctx.strokeStyle = border;
+    ctx.lineWidth = 1;
+    [0, maxVal / 2, maxVal].forEach((value) => {
+      ctx.beginPath();
+      ctx.moveTo(pad, y(value));
+      ctx.lineTo(width - pad, y(value));
+      ctx.stroke();
+      ctx.fillStyle = muted;
+      ctx.font = "10px sans-serif";
+      ctx.textAlign = "right";
+      ctx.fillText(formatMoney(value), pad - 8, y(value) + 4);
+    });
+
+    ctx.strokeStyle = border;
+    ctx.beginPath();
+    ctx.moveTo(pad, pad);
+    ctx.lineTo(pad, height - pad);
+    ctx.lineTo(width - pad, height - pad);
+    ctx.stroke();
+
+    ctx.fillStyle = muted;
+    ctx.font = "9px sans-serif";
+    ctx.textAlign = "center";
+    days.forEach((day, index) => {
+      if (index === 0 || index === days.length - 1 || index % 7 === 0) {
+        ctx.fillText(String(day.date).slice(5), x(index), height - 8);
+      }
+    });
+
+    function drawLine(getValue, color) {
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      days.forEach((day, index) => {
+        const px = x(index);
+        const py = y(getValue(day));
+        if (index === 0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+      });
+      ctx.stroke();
+    }
+
+    drawLine((day) => day.sales, accent);
+    drawLine((day) => day.order_cost, danger);
+  }, [snapshotGraphOpen, snapshotGraphData]);
+
   const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
   const sortedOrders = [...orders]
     .filter((order) => {
@@ -280,7 +349,7 @@ export default function DashboardPage() {
           <div className="edit-modal-card" onClick={(event) => event.stopPropagation()} style={{ maxWidth: "92vw", width: "760px", maxHeight: "90vh", overflow: "auto" }}>
             <h3>Sales vs Order Cost: {formatSalesMonth(salesMonth)}</h3>
             {snapshotGraphLoading && <p>Loading...</p>}
-            {!snapshotGraphLoading && renderSnapshotGraph()}
+            {!snapshotGraphLoading && snapshotGraphData && <canvas ref={snapshotGraphCanvasRef} width={680} height={300} style={{ width: "100%", borderRadius: "var(--radius)", background: "var(--panel)" }} />}
             <div style={{ display: "flex", gap: "12px", marginTop: "8px", fontSize: "0.8rem" }}>
               <span><span style={{ display: "inline-block", width: "10px", height: "10px", background: "var(--accent)" }} /> Sales</span>
               <span><span style={{ display: "inline-block", width: "10px", height: "10px", background: "var(--danger)" }} /> Order cost</span>
