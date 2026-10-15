@@ -55,13 +55,19 @@ export default function DashboardPage() {
     const costPoints = days.map((day, index) => `${x(index)},${y(day.order_cost)}`).join(" ");
     return (
       <svg width="100%" viewBox={`0 0 ${width} ${height}`} style={{ background: "var(--panel)", borderRadius: "var(--radius)" }}>
+        {[0, maxVal / 2, maxVal].map((value) => (
+          <g key={value}>
+            <line x1={pad} y1={y(value)} x2={width - pad} y2={y(value)} stroke="var(--border)" strokeDasharray="4 4" />
+            <text x={pad - 8} y={y(value) + 4} fill="var(--muted)" fontSize="10" textAnchor="end">{formatMoney(value)}</text>
+          </g>
+        ))}
         <line x1={pad} y1={height - pad} x2={width - pad} y2={height - pad} stroke="var(--border)" />
         <line x1={pad} y1={pad} x2={pad} y2={height - pad} stroke="var(--border)" />
+        {days.map((day, index) => (index === 0 || index === days.length - 1 || index % 7 === 0) ? (
+          <text key={day.date} x={x(index)} y={height - 8} fill="var(--muted)" fontSize="9" textAnchor="middle">{String(day.date).slice(5)}</text>
+        ) : null)}
         <polyline points={salesPoints} fill="none" stroke="var(--accent)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
         <polyline points={costPoints} fill="none" stroke="var(--danger)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-        <text x={pad} y={pad - 10} fill="var(--muted)" fontSize="11">{formatMoney(maxVal)}</text>
-        <text x={pad} y={height - 8} fill="var(--muted)" fontSize="11">{String(days[0].date).slice(-2)}</text>
-        <text x={width - pad} y={height - 8} fill="var(--muted)" fontSize="11" textAnchor="end">{String(days[days.length - 1].date).slice(-2)}</text>
       </svg>
     );
   }
