@@ -205,8 +205,8 @@ const [orderSort, setOrderSort] = useState("newest");
         </label>
         <label>Sort
           <select value={orderSort} onChange={(event) => setOrderSort(event.target.value)}>
-            <option value="newest">Descending</option>
-            <option value="oldest">Ascending</option>
+            <option value="newest">Newest</option>
+            <option value="oldest">Oldest</option>
             <option value="tracking">Tracking No.</option>
             <option value="id">Order ID</option>
           </select>
