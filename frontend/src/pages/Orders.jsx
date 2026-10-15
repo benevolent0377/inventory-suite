@@ -143,19 +143,21 @@ export default function OrdersPage() {
           {items.map((item, index) => (
             <div key={index}>
               <div className="form-row">
-                <label>
-                  Item
-                  <select value={item.sku} onChange={(e) => updateItem(index, "sku", e.target.value)}>
-                    <option value="">Select item</option>
-                    {orderProducts.map((p) => <option key={p.id} value={p.sku}>{p.sku}</option>)}
-                  </select>
-                </label>
-                <button type="button" onClick={() => { setSearchPopupIndex(index); setSearchQuery(""); }} aria-label="Search items" style={{ flex: "0 0 auto", display: "inline-flex", alignItems: "center", gap: "0.25rem", whiteSpace: "nowrap" }}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="11" cy="11" r="8"></circle>
-                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                  </svg>
-                </button>
+                <div style={{ display: "flex", alignItems: "flex-end", gap: "0.5rem", flex: "1 1 180px", minWidth: 0 }}>
+                  <label style={{ flex: 1, minWidth: 0 }}>
+                    Item
+                    <select style={{ width: "100%" }} value={item.sku} onChange={(e) => updateItem(index, "sku", e.target.value)}>
+                      <option value="">Select item</option>
+                      {orderProducts.map((p) => <option key={p.id} value={p.sku}>{p.sku}</option>)}
+                    </select>
+                  </label>
+                  <button type="button" onClick={() => { setSearchPopupIndex(index); setSearchQuery(""); }} aria-label="Search items" style={{ flex: "0 0 auto", display: "inline-flex", alignItems: "center", whiteSpace: "nowrap" }}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="11" cy="11" r="8"></circle>
+                      <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                  </button>
+                </div>
                 <label>
                   Qty
                   <input type="number" min="1" value={item.quantity} onChange={(e) => updateItem(index, "quantity", e.target.value)} />
