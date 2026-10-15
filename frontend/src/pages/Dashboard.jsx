@@ -4,6 +4,7 @@ import { request } from "../api/client";
 import TabbedCard from "../components/ui/TabbedCard";
 import GlobalSearchBar from "../components/search/GlobalSearchBar";
 import { formatMoney } from "../utils/currency";
+import { notify } from "../utils/notify";
 
 export default function DashboardPage() {
   const [counts, setCounts] = useState({ products: 0, openOrders: 0, closedOrders30: 0, backorderItems: 0, shortageItems: 0, salesNet: 0, salesGross: 0, orderCostMonth: 0 });
@@ -13,14 +14,56 @@ export default function DashboardPage() {
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
   });
   const [salesMonths, setSalesMonths] = useState([]);
+  const [snapshotGraphOpen, setSnapshotGraphOpen] = useState(false);
+  const [snapshotGraphLoading, setSnapshotGraphLoading] = useState(false);
+  const [snapshotGraphData, setSnapshotGraphData] = useState(null);
   const [logistics, setLogistics] = useState({ total_items: 0, total_on_hand: 0, total_inventory_cost: 0, items: [] });
   const [compact, setCompact] = useState(window.innerWidth < 1000);
   const [activeUser, setActiveUser] = useState("");
+  async function openSnapshotGraph() {
+    setSnapshotGraphOpen(true);
+    setSnapshotGraphLoading(true);
+    setSnapshotGraphData(null);
+    try {
+      const data = await request(`/api/stock/sales/daily?month=${encodeURIComponent(salesMonth)}`);
+      setSnapshotGraphData(data);
+    } catch (err) {
+      notify(err.message || "Unable to load graph");
+      setSnapshotGraphOpen(false);
+    } finally {
+      setSnapshotGraphLoading(false);
+    }
+  }
+
   function formatSalesMonth(value) {
     const parts = String(value || "").split("-");
     if (parts.length !== 2) return value;
     const date = new Date(Number(parts[0]), Number(parts[1]) - 1, 1);
     return date.toLocaleString("default", { month: "short", year: "numeric" });
+  }
+
+  function renderSnapshotGraph() {
+    const days = snapshotGraphData?.days || [];
+    if (!days.length) return <p>No graph data.</p>;
+    const width = 680;
+    const height = 300;
+    const pad = 44;
+    const maxVal = Math.max(1, ...days.flatMap((day) => [Number(day.sales || 0), Number(day.order_cost || 0)]));
+    const x = (index) => pad + (index / (days.length - 1 || 1)) * (width - pad * 2);
+    const y = (value) => height - pad - (Number(value || 0) / maxVal) * (height - pad * 2);
+    const salesPoints = days.map((day, index) => `${x(index)},${y(day.sales)}`).join(" ");
+    const costPoints = days.map((day, index) => `${x(index)},${y(day.order_cost)}`).join(" ");
+    return (
+      <svg width="100%" viewBox={`0 0 ${width} ${height}`} style={{ background: "var(--panel)", borderRadius: "var(--radius)" }}>
+        <line x1={pad} y1={height - pad} x2={width - pad} y2={height - pad} stroke="var(--border)" />
+        <line x1={pad} y1={pad} x2={pad} y2={height - pad} stroke="var(--border)" />
+        <polyline points={salesPoints} fill="none" stroke="var(--accent)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+        <polyline points={costPoints} fill="none" stroke="var(--danger)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+        <text x={pad} y={pad - 10} fill="var(--muted)" fontSize="11">{formatMoney(maxVal)}</text>
+        <text x={pad} y={height - 8} fill="var(--muted)" fontSize="11">{String(days[0].date).slice(-2)}</text>
+        <text x={width - pad} y={height - 8} fill="var(--muted)" fontSize="11" textAnchor="end">{String(days[days.length - 1].date).slice(-2)}</text>
+      </svg>
+    );
   }
   const navigate = useNavigate();
 
@@ -188,11 +231,14 @@ export default function DashboardPage() {
         <div className="stat-card sales-card">
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px" }}>
             <span>Monthly Snapshot</span>
-            <select value={salesMonth} onChange={(event) => setSalesMonth(event.target.value)} aria-label="Snapshot month">
-              {salesMonths.map((month) => (
-                <option key={month} value={month}>{formatSalesMonth(month)}</option>
-              ))}
-            </select>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <select value={salesMonth} onChange={(event) => setSalesMonth(event.target.value)} aria-label="Snapshot month">
+                {salesMonths.map((month) => (
+                  <option key={month} value={month}>{formatSalesMonth(month)}</option>
+                ))}
+              </select>
+              <button type="button" onClick={openSnapshotGraph}>Graph</button>
+            </div>
           </div>
           <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
             <div style={{ flex: "1 1 120px" }}>
@@ -221,6 +267,22 @@ export default function DashboardPage() {
         <div className="dashboard-grid">
           {orderIndex}
           {logisticsPanel}
+        </div>
+      )}
+      {snapshotGraphOpen && (
+        <div className="edit-modal-overlay" onClick={() => setSnapshotGraphOpen(false)}>
+          <div className="edit-modal-card" onClick={(event) => event.stopPropagation()} style={{ maxWidth: "92vw", width: "760px", maxHeight: "90vh", overflow: "auto" }}>
+            <h3>Sales vs Order Cost: {formatSalesMonth(salesMonth)}</h3>
+            {snapshotGraphLoading && <p>Loading...</p>}
+            {!snapshotGraphLoading && renderSnapshotGraph()}
+            <div style={{ display: "flex", gap: "12px", marginTop: "8px", fontSize: "0.8rem" }}>
+              <span><span style={{ display: "inline-block", width: "10px", height: "10px", background: "var(--accent)" }} /> Sales</span>
+              <span><span style={{ display: "inline-block", width: "10px", height: "10px", background: "var(--danger)" }} /> Order cost</span>
+            </div>
+            <div className="edit-modal-actions" style={{ marginTop: "12px" }}>
+              <button type="button" onClick={() => setSnapshotGraphOpen(false)}>Close</button>
+            </div>
+          </div>
         </div>
       )}
     </div>

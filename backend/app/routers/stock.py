@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -44,6 +44,65 @@ def sales_months(db: Session = Depends(get_db)):
     months.add(now.strftime("%Y-%m"))
     return sorted(months, reverse=True)
 
+
+@router.get("/sales/daily")
+def daily_sales(month: Optional[str] = None, db: Session = Depends(get_db)):
+    if month:
+        try:
+            selected = datetime.strptime(month, "%Y-%m")
+        except ValueError:
+            selected = datetime.utcnow().replace(day=1)
+    else:
+        selected = datetime.utcnow()
+    start = selected.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    if start.month == 12:
+        end = start.replace(year=start.year + 1, month=1)
+    else:
+        end = start.replace(month=start.month + 1)
+
+    sales_by_date = {}
+    cost_by_date = {}
+    day = start
+    while day < end:
+        key = day.strftime("%Y-%m-%d")
+        sales_by_date[key] = 0.0
+        cost_by_date[key] = 0.0
+        day += timedelta(days=1)
+
+    for movement in db.query(models.Movement).filter(models.Movement.movement_type == "sale").all():
+        if not movement.created_at or not (start <= movement.created_at < end):
+            continue
+        product = db.get(models.Product, movement.product_id)
+        if not product:
+            continue
+        quantity = abs(movement.quantity)
+        key = movement.created_at.strftime("%Y-%m-%d")
+        if key in sales_by_date:
+            sales_by_date[key] += quantity * (product.price or 0)
+
+    for order in db.query(models.Order).all():
+        order_date = order.order_date or order.created_at
+        if not order_date or not (start <= order_date < end):
+            continue
+        key = order_date.strftime("%Y-%m-%d")
+        if key in cost_by_date:
+            cost_by_date[key] += order.total_cost or 0
+
+    days = []
+    day = start
+    while day < end:
+        key = day.strftime("%Y-%m-%d")
+        days.append({
+            "date": key,
+            "sales": sales_by_date[key],
+            "order_cost": cost_by_date[key],
+        })
+        day += timedelta(days=1)
+
+    return {
+        "month": start.strftime("%Y-%m"),
+        "days": days,
+    }
 
 @router.get("/sales/month")
 def monthly_sales(month: Optional[str] = None, db: Session = Depends(get_db)):
