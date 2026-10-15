@@ -193,7 +193,7 @@ export default function ProductsPage() {
     return matchesSearch && matchesVendor;
   });
 
-  const stockBySku = Object.fromEntries(stock.map((row) => [row.product_sku, row]));
+  const stockByProductId = Object.fromEntries(stock.map((row) => [row.product_id, row]));
 
   function openRemoveStock(sku) {
     setRemoveSku(sku);
