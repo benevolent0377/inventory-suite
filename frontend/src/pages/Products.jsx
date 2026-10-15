@@ -330,7 +330,7 @@ export default function ProductsPage() {
               return (
                 <div style={{ marginTop: "12px", padding: "12px", background: "var(--panel-strong, rgba(0,0,0,0.15))", border: "1px solid var(--border, rgba(0,0,0,0.1))", borderRadius: "var(--radius, 8px)", boxShadow: "var(--shadow, none)" }}>
                   <div style={{ display: "flex", gap: "8px", alignItems: "stretch" }}>
-                    <div style={{ position: "relative", width: "44px", fontSize: "0.75rem", color: "var(--muted)" }}>
+                    <div style={{ position: "relative", width: "44px", height: `${chartHeight}px`, alignSelf: "flex-start", fontSize: "0.75rem", color: "var(--muted)" }}>
                       <div style={{ position: "absolute", top: 0, left: 0 }}>Units</div>
                       <div style={{ position: "absolute", top: "4px", right: 0 }}>{maxUnits}</div>
                       <div style={{ position: "absolute", top: "50%", right: 0, transform: "translateY(-50%)" }}>{Math.round(maxUnits / 2)}</div>
