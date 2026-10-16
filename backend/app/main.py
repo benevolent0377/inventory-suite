@@ -7,14 +7,22 @@ from starlette.staticfiles import StaticFiles
 from starlette.responses import FileResponse
 
 from . import models  # noqa: F401
-from .db import Base, engine, ensure_schema, SessionLocal, set_demo_db, reset_demo_db, DEMO_DB_PATH
+from .db import Base, engine, ensure_schema, SessionLocal, set_demo_db, reset_demo_db, get_engine, DEMO_DB_PATH
 from .routers import register_routers
 from . import models
 from .auth import generate_passkey, get_user_by_token, hash_passkey
 from datetime import datetime, timezone
 
 Base.metadata.create_all(bind=engine)
-ensure_schema()
+ensure_schema(engine)
+if os.path.exists(DEMO_DB_PATH):
+    token = set_demo_db(True)
+    try:
+        demo_engine = get_engine()
+        Base.metadata.create_all(bind=demo_engine)
+        ensure_schema(demo_engine)
+    finally:
+        reset_demo_db(token)
 
 
 def _bootstrap_admin(demo=False, passkey=None):

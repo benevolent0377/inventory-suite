@@ -16,6 +16,7 @@ def product_to_dict(product: models.Product, db: Session):
         "id": product.id,
         "sku": product.sku,
         "name": product.name,
+        "vendor_item_id": product.vendor_item_id or "",
         "category": product.category,
         "unit": product.unit,
         "vendor": vendor.name if vendor else None,

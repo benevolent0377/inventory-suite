@@ -20,6 +20,7 @@ def build_order_read(order: models.Order, db: Session) -> schemas.OrderRead:
                 product_id=item.product_id,
                 product_sku=product.sku if product else "",
                 product_name=product.name if product else "",
+                product_vendor_item_id=product.vendor_item_id if product else "",
                 quantity=item.quantity,
                 expected_arrival_date=item.expected_arrival_date,
                 checked_in=item.checked_in,

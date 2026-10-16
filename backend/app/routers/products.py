@@ -1,4 +1,5 @@
 import base64
+import random
 import io
 import math
 from datetime import datetime, timedelta
@@ -9,6 +10,48 @@ from .. import models, schemas
 from ..db import get_db
 
 router = APIRouter(prefix="/products", tags=["products"])
+
+
+VENDOR_ITEM_ID_PATTERNS = {
+    1: ("FSH", "digits", 4),
+    2: ("HM", "digits", 6),
+    3: ("ASC", "hex", 4),
+    4: ("BLT", "digits", 3),
+    5: ("CP", "digits", 8),
+    6: ("VE", "alnum", 4),
+    7: ("BM", "digits", 6),
+    8: ("SWA", "digits", 3),
+    9: ("GLF", "digits", 8),
+    10: ("HT", "digits", 4),
+    11: ("SBS", "digits", 6),
+    12: ("FC", "mixed", 7),
+}
+
+
+def _random_vendor_item_id(vendor_id, db):
+    vendor = db.get(models.Vendor, vendor_id) if vendor_id else None
+    prefix, kind, length = VENDOR_ITEM_ID_PATTERNS.get(vendor_id if vendor_id in VENDOR_ITEM_ID_PATTERNS else None, ("VND", "alnum", 6))
+    if vendor is not None and vendor_id not in VENDOR_ITEM_ID_PATTERNS:
+        prefix = "".join(part[:1].upper() for part in vendor.name.split()[:3]) or "VND"
+    for _ in range(25):
+        if kind == "digits":
+            suffix = "".join(random.choice("0123456789") for _ in range(length))
+        elif kind == "hex":
+            suffix = "".join(random.choice("0123456789ABCDEF") for _ in range(length))
+        elif kind == "mixed":
+            suffix = "".join(random.choice("0123456789-") for _ in range(length))
+        else:
+            suffix = "".join(random.choice("ABCDEFGHJKLMNPQRSTUVWXYZ23456789") for _ in range(length))
+        if "mixed" in kind:
+            candidate = f"{prefix}-{suffix}"
+        else:
+            candidate = f"{prefix}-{suffix}"
+        existing = db.query(models.Product).filter(models.Product.vendor_item_id == candidate).first()
+        if not existing:
+            return candidate
+    return f"{prefix}-{random.randint(100000, 999999)}"
+
+
 
 
 @router.get("", response_model=list[schemas.ProductRead])
@@ -29,7 +72,10 @@ def create_product(payload: schemas.ProductCreate, db: Session = Depends(get_db)
     exists = db.query(models.Product).filter(models.Product.sku == payload.sku).first()
     if exists:
         raise HTTPException(status_code=400, detail="SKU already exists")
-    product = models.Product(**payload.model_dump())
+    data = payload.model_dump()
+    if not (data.get("vendor_item_id") or "").strip():
+        data["vendor_item_id"] = _random_vendor_item_id(data.get("vendor_id"), db)
+    product = models.Product(**data)
     db.add(product)
     db.commit()
     db.refresh(product)
@@ -43,7 +89,10 @@ def update_product(product_id: int, payload: schemas.ProductCreate, db: Session 
         raise HTTPException(status_code=404, detail="Product not found")
     if payload.price != product.price:
         product.last_price = product.price
-    for key, value in payload.model_dump().items():
+    data = payload.model_dump()
+    if not (data.get("vendor_item_id") or "").strip():
+        data["vendor_item_id"] = _random_vendor_item_id(data.get("vendor_id") or product.vendor_id, db)
+    for key, value in data.items():
         setattr(product, key, value)
     db.commit()
     db.refresh(product)

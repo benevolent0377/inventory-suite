@@ -20,6 +20,7 @@ class Product(Base):
     order_overhead_months = Column(Float, default=0)
     duplicate_item_numbers = Column(JSON, default=list)
     vendor_id = Column(Integer, ForeignKey("vendors.id"), nullable=True)
+    vendor_item_id = Column(String, default="")
     created_at = Column(DateTime, server_default=func.now())
 
 
@@ -123,3 +124,20 @@ class ActivityLog(Base):
     error = Column(String, default="")
     client_host = Column(String, default="")
     created_at = Column(DateTime, server_default=func.now(), index=True)
+
+
+class Request(Base):
+    __tablename__ = "requests"
+
+    id = Column(Integer, primary_key=True, index=True)
+    opened_by = Column(String, nullable=False, index=True)
+    status = Column(String, default="open", index=True)
+    status_updated_by = Column(String, default="")
+    date_placed = Column(DateTime, server_default=func.now())
+    date_filled = Column(DateTime, nullable=True)
+    linked_order_id = Column(Integer, ForeignKey("orders.id"), nullable=True)
+    total_requested_quantity = Column(Float, default=0)
+    priority_score = Column(Float, default=0)
+    items = Column(JSON, default=list)
+    notes = Column(String, default="")
+    created_at = Column(DateTime, server_default=func.now())

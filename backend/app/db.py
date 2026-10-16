@@ -74,9 +74,11 @@ Base = declarative_base()
 engine = get_engine()  # default (normal) engine for startup/schema compatibility
 
 
-def ensure_schema():
+def ensure_schema(engine=None):
     from sqlalchemy import inspect, text
 
+    if engine is None:
+        engine = globals()["engine"]
     inspector = inspect(engine)
     with engine.begin() as connection:
         for table in Base.metadata.sorted_tables:
@@ -96,6 +98,8 @@ def ensure_schema():
             columns = {column["name"] for column in inspector.get_columns("products")}
             if "description" in columns:
                 connection.execute(text("UPDATE products SET description = '' WHERE description IS NULL"))
+            if "vendor_item_id" in columns:
+                connection.execute(text("UPDATE products SET vendor_item_id = '' WHERE vendor_item_id IS NULL"))
     if inspector.has_table("users"):
         with engine.begin() as connection:
             columns = {column["name"] for column in inspector.get_columns("users")}

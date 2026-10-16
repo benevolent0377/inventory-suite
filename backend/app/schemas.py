@@ -17,6 +17,7 @@ class ProductCreate(BaseModel):
     order_overhead_months: float = 0
     duplicate_item_numbers: List[str] = []
     vendor_id: int
+    vendor_item_id: str = ""
 
 
 class ProductRead(ProductCreate):
@@ -102,6 +103,7 @@ class OrderItemRead(BaseModel):
     product_id: int
     product_sku: str
     product_name: str
+    product_vendor_item_id: str = ""
     quantity: float
     expected_arrival_date: Optional[datetime] = None
     checked_in: bool = False
@@ -149,6 +151,54 @@ class LogisticsItem(BaseModel):
     order_quantity: float = 0
     slow_order: bool = False
     priority_score: float = 0
+
+class RequestItemCreate(BaseModel):
+    product_id: int
+    quantity: float = 1
+
+
+class RequestItemRead(RequestItemCreate):
+    product_id: int
+    quantity: float
+    vendor_id: Optional[int] = None
+    sku: str = ""
+    name: str = ""
+    vendor_name: Optional[str] = None
+    vendor_item_id: str = ""
+    item_status: str = ""
+    urgency: float = 0
+    priority_score: float = 0
+
+
+class RequestCreate(BaseModel):
+    opened_by: str
+    items: List[RequestItemCreate]
+    separate_per_item: bool = False
+    notes: str = ""
+
+
+class RequestUpdate(BaseModel):
+    status: Optional[str] = None
+    status_updated_by: Optional[str] = None
+    linked_order_id: Optional[int] = None
+
+
+class RequestRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    opened_by: str
+    status: str = "open"
+    status_updated_by: str = ""
+    date_placed: Optional[datetime] = None
+    date_filled: Optional[datetime] = None
+    linked_order_id: Optional[int] = None
+    total_requested_quantity: float = 0
+    priority_score: float = 0
+    items: List[RequestItemRead] = []
+    notes: str = ""
+    created_at: Optional[datetime] = None
+
 
 class LogisticsRead(BaseModel):
     total_items: int

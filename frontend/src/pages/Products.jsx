@@ -5,6 +5,7 @@ import TabbedCard from "../components/ui/TabbedCard";
 import { formatMoney } from "../utils/currency";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { notify } from "../utils/notify";
+import RequestItemsModal from "../components/requests/RequestItemsModal";
 import { confirm } from "../utils/confirm";
 import { playPopup } from "../utils/sound";
 
@@ -21,6 +22,7 @@ const emptyForm = {
   order_overhead_months: 0,
   duplicate_item_numbers: "",
   vendor_id: "",
+  vendor_item_id: "",
 };
 
 export default function ProductsPage() {
@@ -29,6 +31,7 @@ export default function ProductsPage() {
   const [vendors, setVendors] = useState([]);
   const [vendorFilter, setVendorFilter] = useState("");
   const [searchText, setSearchText] = useState("");
+  const [searchField, setSearchField] = useState("all");
   const [stock, setStock] = useState([]);
   const [logistics, setLogistics] = useState([]);
   const [removeStockOpen, setRemoveStockOpen] = useState(false);
@@ -50,6 +53,8 @@ export default function ProductsPage() {
   const [statsError, setStatsError] = useState("");
   const [dateRange, setDateRange] = useState("30");
   const [error, setError] = useState("");
+  const [requestModalOpen, setRequestModalOpen] = useState(false);
+  const [requestInitialIds, setRequestInitialIds] = useState([]);
 
   const load = async () => {
     const [productData, vendorData, stockData, logisticsData] = await Promise.all([
@@ -101,6 +106,7 @@ export default function ProductsPage() {
       order_overhead_days: product.order_overhead_days,
       order_overhead_months: product.order_overhead_months,
       duplicate_item_numbers: (product.duplicate_item_numbers || []).join(", "),
+      vendor_item_id: product.vendor_item_id || "",
       vendor_id: product.vendor_id ?? (vendors.length ? String(vendors[0].id) : ""),
     });
   }
@@ -181,17 +187,27 @@ export default function ProductsPage() {
       order_overhead_days: Number(raw.order_overhead_days),
       order_overhead_months: Number(raw.order_overhead_months),
       duplicate_item_numbers: (raw.duplicate_item_numbers || "").split(",").map((s) => s.trim()).filter(Boolean),
+      vendor_item_id: (raw.vendor_item_id || "").trim(),
       vendor_id: raw.vendor_id === "" ? null : Number(raw.vendor_id),
     };
   }
 
   const query = (searchText || searchParams.get("q") || "").toLowerCase();
   const visibleProducts = products.filter((product) => {
-    const matchesSearch = !query || [product.sku, product.name, product.category, product.vendor_id, vendors.find((v) => v.id === product.vendor_id)?.name]
-      .filter(Boolean)
-      .join(" ")
-      .toLowerCase()
-      .includes(query);
+    const searchFields = {
+    all: [product.sku, product.name, product.category, product.vendor_item_id, vendors.find((v) => v.id === product.vendor_id)?.name],
+    sku: [product.sku],
+    name: [product.name],
+    category: [product.category],
+    vendor_item_id: [product.vendor_item_id],
+    vendor: [vendors.find((v) => v.id === product.vendor_id)?.name],
+    description: [product.description],
+  };
+  const matchesSearch = !query || (searchFields[searchField] || searchFields.all)
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase()
+    .includes(query);
     const matchesVendor = !vendorFilter || String(product.vendor_id) === String(vendorFilter);
     return matchesSearch && matchesVendor;
   });
@@ -234,6 +250,17 @@ export default function ProductsPage() {
       {error && <p className="error">{error}</p>}
       <div className="form-row">
         <label>Search<input value={searchText} onChange={(e) => setSearchText(e.target.value)} placeholder="Search items" /></label>
+        <label>Search By
+          <select value={searchField} onChange={(e) => setSearchField(e.target.value)}>
+            <option value="all">All fields</option>
+            <option value="sku">SKU</option>
+            <option value="name">Name</option>
+            <option value="category">Category</option>
+            <option value="vendor">Vendor</option>
+            <option value="vendor_item_id">Vendor Item ID</option>
+            <option value="description">Description</option>
+          </select>
+        </label>
         <label>Vendor
           <select value={vendorFilter} onChange={(e) => setVendorFilter(e.target.value)}>
             <option value="">All vendors</option>
@@ -242,7 +269,7 @@ export default function ProductsPage() {
         </label>
       </div>
       <TabbedCard
-        defaultTab={1}
+        defaultTab={searchParams.get("tab") === "add" ? 0 : searchParams.get("tab") === "logistics" ? 2 : 1}
         style={{ marginTop: "25px" }}
         tabs={[
           {
@@ -259,6 +286,7 @@ export default function ProductsPage() {
             {vendors.map((vendor) => <option key={vendor.id} value={vendor.id}>{vendor.name}</option>)}
           </select>
         </label>
+        <label>Vendor Item ID<input value={form.vendor_item_id} onChange={(e) => setForm({ ...form, vendor_item_id: e.target.value })} /></label>
         <label>Price<input type="number" step="any" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} /></label>
         <label>Cost<input type="number" step="any" value={form.cost} onChange={(e) => setForm({ ...form, cost: e.target.value })} /></label>
         <label>Required Backstock<input type="number" step="any" value={form.required_backstock} onChange={(e) => setForm({ ...form, required_backstock: e.target.value })} /></label>
@@ -273,7 +301,7 @@ export default function ProductsPage() {
             label: "Items",
             content: (
               <table className="data-table">
-        <thead><tr><th>SKU</th><th>Name</th><th>Description</th><th>Vendor</th><th>Price</th><th>Last Price</th><th>Cost</th><th>Required</th><th>On Hand</th><th>Overhead Days</th><th>Overhead Months</th><th>Actions</th></tr></thead>
+        <thead><tr><th>SKU</th><th>Name</th><th>Description</th><th>Vendor</th><th>Vendor Item ID</th><th>Price</th><th>Last Price</th><th>Cost</th><th>Required</th><th>On Hand</th><th>Overhead Days</th><th>Overhead Months</th><th>Actions</th></tr></thead>
         <tbody>
           {visibleProducts.map((product) => (
             <tr key={product.id}>
@@ -289,7 +317,8 @@ export default function ProductsPage() {
                   </div>
                 </details>
               </td>
-              <td>{vendors.find((vendor) => vendor.id === product.vendor_id)?.name || "-"}</td>
+               <td>{vendors.find((vendor) => vendor.id === product.vendor_id)?.name || "-"}</td>
+               <td>{product.vendor_item_id || "-"}</td>
               <td>{formatMoney(product.price)}</td>
               <td>{product.last_price == null ? "-" : formatMoney(product.last_price)}</td>
               <td>{formatMoney(product.cost)}</td>
@@ -309,7 +338,41 @@ export default function ProductsPage() {
       </table>
             ),
           },
+          {
+            label: "Logistics",
+            content: (
+              <div className="dashboard-panel">
+                <h3>Logistics</h3>
+                <table className="data-table">
+                  <thead><tr><th>SKU</th><th>Name</th><th>On Hand</th><th>Required</th><th>Shortage</th><th>Status</th><th>Urgency</th><th>Order Qty</th><th>Actions</th></tr></thead>
+                  <tbody>
+                    {(Array.isArray(logistics) ? logistics : (logistics.items || [])).map((item) => (
+                      <tr key={item.product_id}>
+                        <td>{item.sku}</td>
+                        <td>{item.name}</td>
+                        <td>{item.on_hand}</td>
+                        <td>{item.required_backstock}</td>
+                        <td>{item.shortage}</td>
+                        <td>{item.status}</td>
+                        <td><span style={{ fontWeight: 700 }}>{Number(item.urgency).toFixed(1).padStart(4, "0")}</span></td>
+                        <td>{item.order_quantity}</td>
+                        <td><button type="button" onClick={() => { setRequestInitialIds([item.product_id]); setRequestModalOpen(true); }}>Request</button></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ),
+          },
         ]}
+      />
+      <RequestItemsModal
+        isOpen={requestModalOpen}
+        onClose={() => setRequestModalOpen(false)}
+        logisticsItems={logistics}
+        initialProductIds={requestInitialIds}
+        currentUser={(() => { try { const u = JSON.parse(localStorage.getItem("inventory-user") || "null"); return u?.username || u?.name || "anonymous"; } catch { return "anonymous"; } })()}
+        onCreated={() => load().catch((err) => setError(err.message))}
       />
       {statsProduct && (
         <div className="edit-modal-overlay">
@@ -363,6 +426,7 @@ export default function ProductsPage() {
                   {vendors.map((vendor) => <option key={vendor.id} value={vendor.id}>{vendor.name}</option>)}
                 </select>
               </label>
+              <label>Vendor Item ID<input value={editForm.vendor_item_id} onChange={(e) => setEditForm({ ...editForm, vendor_item_id: e.target.value })} /></label>
               <label>Price<input type="number" step="any" value={editForm.price} onChange={(e) => setEditForm({ ...editForm, price: e.target.value })} /></label>
               <label>Cost<input type="number" step="any" value={editForm.cost} onChange={(e) => setEditForm({ ...editForm, cost: e.target.value })} /></label>
               <label>Required Backstock<input type="number" step="any" value={editForm.required_backstock} onChange={(e) => setEditForm({ ...editForm, required_backstock: e.target.value })} /></label>

@@ -60,6 +60,7 @@ def cmd_items_list(args):
             "order_overhead_days": p.order_overhead_days,
             "order_overhead_months": p.order_overhead_months,
             "duplicate_item_numbers": p.duplicate_item_numbers or [],
+            "vendor_item_id": p.vendor_item_id or "",
         } for p in products])
         db.close()
         return
@@ -88,6 +89,7 @@ def cmd_items_get(args):
         "order_overhead_months": product.order_overhead_months,
         "on_hand": on_hand,
         "duplicate_item_numbers": product.duplicate_item_numbers or [],
+        "vendor_item_id": product.vendor_item_id or "",
     })
     db.close()
 
@@ -109,6 +111,7 @@ def cmd_items_create(args):
         order_overhead_months=args.order_overhead_months or 0,
         duplicate_item_numbers=parse_list(args.duplicate_item_numbers),
         vendor_id=resolve_vendor(db, args.vendor) if args.vendor else None,
+        vendor_item_id=getattr(args, "vendor_item_id", "") or "",
     )
     db.add(product)
     db.commit()
@@ -143,6 +146,8 @@ def cmd_items_update(args):
         product.vendor_id = resolve_vendor(db, args.vendor)
     if args.duplicate_item_numbers is not None:
         product.duplicate_item_numbers = parse_list(args.duplicate_item_numbers)
+    if getattr(args, "vendor_item_id", None) is not None:
+        product.vendor_item_id = args.vendor_item_id
     db.commit()
     print(f"Updated item {product.sku}")
     db.close()
@@ -338,6 +343,7 @@ def build_parser():
     ic.add_argument("--order-overhead-days", type=float, dest="order_overhead_days")
     ic.add_argument("--order-overhead-months", type=float, dest="order_overhead_months")
     ic.add_argument("--duplicate-item-numbers", dest="duplicate_item_numbers")
+    ic.add_argument("--vendor-item-id", dest="vendor_item_id")
     ic.set_defaults(func=cmd_items_create)
     iu = items_sub.add_parser("update")
     iu.add_argument("item")
@@ -352,6 +358,7 @@ def build_parser():
     iu.add_argument("--order-overhead-days", type=float, dest="order_overhead_days")
     iu.add_argument("--order-overhead-months", type=float, dest="order_overhead_months")
     iu.add_argument("--duplicate-item-numbers", dest="duplicate_item_numbers")
+    iu.add_argument("--vendor-item-id", dest="vendor_item_id")
     iu.set_defaults(func=cmd_items_update)
 
     vendors = sub.add_parser("vendors")

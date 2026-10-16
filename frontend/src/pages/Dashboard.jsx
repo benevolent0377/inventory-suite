@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import RequestItemsModal from "../components/requests/RequestItemsModal";
 import { request } from "../api/client";
 import TabbedCard from "../components/ui/TabbedCard";
 import GlobalSearchBar from "../components/search/GlobalSearchBar";
@@ -8,7 +9,7 @@ import { LineChart, Line, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } f
 import { notify } from "../utils/notify";
 
 export default function DashboardPage() {
-  const [counts, setCounts] = useState({ products: 0, openOrders: 0, closedOrders30: 0, backorderItems: 0, shortageItems: 0, salesNet: 0, salesGross: 0, orderCostMonth: 0 });
+  const [counts, setCounts] = useState({ products: 0, openOrders: 0, closedOrders30: 0, requestedOpen30: 0, backorderItems: 0, shortageItems: 0, salesNet: 0, salesGross: 0, orderCostMonth: 0 });
   const [orders, setOrders] = useState([]);
   const [salesMonth, setSalesMonth] = useState(() => {
     const now = new Date();
@@ -74,16 +75,19 @@ export default function DashboardPage() {
     );
   }
   const navigate = useNavigate();
+  const [requestModalOpen, setRequestModalOpen] = useState(false);
+  const [requestInitialIds, setRequestInitialIds] = useState([]);
 
   useEffect(() => {
     let active = true;
     async function load() {
-      const [products, orderData, logisticsData, monthList, users] = await Promise.all([
+      const [products, orderData, logisticsData, monthList, users, requestData] = await Promise.all([
         request("/api/products"),
         request("/api/orders"),
         request("/api/logistics"),
-        request("/api/stock/sales/months"),
+        request(`/api/stock/sales/months`),
         request("/api/users"),
+        request("/api/requests"),
       ]);
       if (active) {
         const nowForCounts = new Date();
@@ -105,6 +109,7 @@ export default function DashboardPage() {
           }).length,
           backorderItems: logisticsData.items.filter((item) => item.on_hand === 0 && item.required_backstock > 0).length,
           shortageItems: logisticsData.items.filter((item) => item.shortage > 0 && item.on_hand > 0).length,
+          requestedOpen30: (Array.isArray(requestData) ? requestData : []).filter((requestRow) => requestRow.status === "open" && new Date(requestRow.date_placed || requestRow.created_at).getTime() >= thirtyDaysAgo).length,
           salesNet: 0,
           salesGross: 0,
         });
@@ -199,6 +204,11 @@ export default function DashboardPage() {
     </div>
   );
 
+  function openRequest(item) {
+    setRequestInitialIds(item ? [item.product_id] : []);
+    setRequestModalOpen(true);
+  }
+
   const logisticsPanel = (
     <div className="dashboard-panel">
       <h3>Logistics</h3>
@@ -208,9 +218,12 @@ export default function DashboardPage() {
         <div className="stat-card"><span>Inventory Cost</span><strong>{formatMoney(logistics.total_inventory_cost)}</strong></div>
       </div>
       <table className="data-table">
-        <thead><tr><th>SKU</th><th>Name</th><th>On Hand</th><th>Required</th><th>Shortage</th><th>Status</th><th>Urgency</th><th>Order Qty</th></tr></thead>
+        <thead><tr><th>SKU</th><th>Name</th><th>On Hand</th><th>Required</th><th>Shortage</th><th>Status</th><th>Urgency</th><th>Order Qty</th><th>Actions</th></tr></thead>
         <tbody>
-          {logistics.items.map((item) => (
+          {logistics.items
+            .filter((item) => item.status === "critical" || item.status === "out_of_stock")
+            .slice(0, 40)
+            .map((item) => (
             <tr key={item.product_id}>
               <td>{item.sku}</td>
               <td>{item.name}</td>
@@ -220,12 +233,13 @@ export default function DashboardPage() {
               <td>{item.status}</td>
               <td><span style={{ color: `hsl(${120 - ((Number(item.urgency) - 1) / 19) * 120}, 85%, 45%)`, fontWeight: 700 }}>{Number(item.urgency).toFixed(1).padStart(4, "0")}</span></td>
               <td>{item.order_quantity}</td>
+              <td><button type="button" onClick={() => openRequest(item)}>Request</button></td>
             </tr>
           ))}
         </tbody>
       </table>
       <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "8px" }}>
-        <button type="button" onClick={() => navigate("/stock")}>See more</button>
+        <button type="button" onClick={() => navigate("/products?tab=logistics")}>See more</button>
       </div>
     </div>
   );
@@ -236,7 +250,7 @@ export default function DashboardPage() {
       <h2>Dashboard</h2>
       <div className="stat-grid">
         <div className="stat-card"><span>Products</span><div className="sales-values"><div><span className="sales-label">Products</span><strong>{counts.products}</strong></div><div><span className="sales-label">Backorder</span><strong>{counts.backorderItems}</strong></div><div><span className="sales-label">Shortage</span><strong>{counts.shortageItems}</strong></div></div></div>
-        <div className="stat-card"><span>Orders</span><div className="sales-values"><div><span className="sales-label">Open</span><strong>{counts.openOrders}</strong></div><div><span className="sales-label">Closed</span><strong>{counts.closedOrders30}</strong></div></div></div>
+        <div className="stat-card"><span>Orders</span><div className="sales-values"><div><span className="sales-label">Open</span><strong>{counts.openOrders}</strong></div><div><span className="sales-label">Closed</span><strong>{counts.closedOrders30}</strong></div><div><span className="sales-label">Requested</span><strong>{counts.requestedOpen30}</strong></div></div></div>
         <div className="stat-card sales-card">
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px" }}>
             <span>Monthly Snapshot</span>
@@ -278,6 +292,14 @@ export default function DashboardPage() {
           {logisticsPanel}
         </div>
       )}
+      <RequestItemsModal
+        isOpen={requestModalOpen}
+        onClose={() => setRequestModalOpen(false)}
+        logisticsItems={logistics.items}
+        initialProductIds={requestInitialIds}
+        currentUser={(() => { try { const u = JSON.parse(localStorage.getItem("inventory-user") || "null"); return u?.username || u?.name || "anonymous"; } catch { return "anonymous"; } })()}
+        onCreated={() => load()}
+      />
       {snapshotGraphOpen && (
         <div className="edit-modal-overlay" onClick={() => setSnapshotGraphOpen(false)}>
           <div className="edit-modal-card" onClick={(event) => event.stopPropagation()} style={{ maxWidth: "92vw", width: "760px", maxHeight: "90vh", overflow: "auto" }}>

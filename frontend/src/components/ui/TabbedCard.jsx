@@ -1,7 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export default function TabbedCard({ tabs, style, className, defaultTab = 0 }) {
   const [active, setActive] = useState(defaultTab);
+  useEffect(() => {
+    setActive(defaultTab);
+  }, [defaultTab]);
   const current = tabs[active] || tabs[0];
 
   return (
