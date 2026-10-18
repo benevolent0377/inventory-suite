@@ -99,20 +99,25 @@ export default function RequestItemsModal({ isOpen, onClose, logisticsItems, ini
   if (!isOpen) return null;
 
   return (
-    <div className="edit-modal-overlay" onClick={onClose}>
-      <div className="edit-modal-card" onClick={(event) => event.stopPropagation()} style={{ maxWidth: "96vw", width: "720px", height: "80vh", maxHeight: "80vh", display: "flex", flexDirection: "column", overflow: "hidden", padding: "20px", borderRadius: "18px", boxShadow: "0 24px 80px rgba(0,0,0,0.24)" }}>
-        <h3 style={{ marginBottom: "16px", fontSize: "1.25rem" }}>Request Items</h3>
-        {error && <p className="error">{error}</p>}
+    <div className="request-modal-overlay" onClick={onClose}>
+      <div className="request-modal-card" onClick={(event) => event.stopPropagation()}>
+        <h3 className="request-modal-title">Request Items</h3>
+        {error && <p className="request-modal-error">{error}</p>}
 
-        <div className="form-row" style={{ marginBottom: "0.75rem" }}>
-          <label>Search<input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search items" /></label>
-          <label>Vendor
+        <div className="request-modal-filters">
+          <label>
+            <span>Search</span>
+            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search items" />
+          </label>
+          <label>
+            <span>Vendor</span>
             <select value={vendorFilter} onChange={(e) => setVendorFilter(e.target.value)}>
               <option value="">All vendors</option>
               {vendors.map((vendor) => <option key={vendor} value={vendor}>{vendor}</option>)}
             </select>
           </label>
-          <label>Status
+          <label>
+            <span>Status</span>
             <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
               <option value="">All statuses</option>
               <option value="out_of_stock">out_of_stock</option>
@@ -122,7 +127,8 @@ export default function RequestItemsModal({ isOpen, onClose, logisticsItems, ini
               <option value="not_tracked">not_tracked</option>
             </select>
           </label>
-          <label>Sort
+          <label>
+            <span>Sort</span>
             <select value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
               <option value="name">Name</option>
               <option value="sku">SKU</option>
@@ -134,46 +140,52 @@ export default function RequestItemsModal({ isOpen, onClose, logisticsItems, ini
           </label>
         </div>
 
-        <div style={{ flex: 1, minHeight: 0, display: "flex", gap: "12px", marginBottom: "12px" }}>
-          <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
-            <strong>Available items</strong>
-            <div className="order-items-scroll" style={{ display: "flex", flexDirection: "column", gap: "8px", flex: 1, minHeight: 0, overflowY: "auto", border: "1px solid var(--border)", borderRadius: "10px", padding: "12px", marginTop: "8px" }}>
+        <div className="request-modal-columns">
+          <div className="request-modal-column">
+            <strong className="request-modal-column-title">Available items</strong>
+            <div className="request-modal-list">
               {filtered.filter((item) => !selected[item.product_id]).map((item) => (
                 <button
                   key={item.product_id}
                   type="button"
                   onClick={() => toggleItem(item.product_id)}
-                  style={{ textAlign: "left", padding: "8px", borderRadius: "8px", border: "1px solid var(--border)", background: "var(--panel-strong)", color: "var(--text)", cursor: "pointer" }}
+                  className="request-modal-item"
                 >
-                  <span style={{ fontSize: "0.85rem" }}>{item.sku} - {item.name}<br />{item.vendor_name || "No vendor"} - {item.status}{item.vendor_item_id ? ` - ${item.vendor_item_id}` : ""}</span>
+                  <span className="request-modal-item-name">{item.sku} - {item.name}</span>
+                  <span className="request-modal-item-meta">
+                    {item.vendor_name || "No vendor"}
+                    <span className={`request-modal-status request-modal-status-${item.status}`}>{item.status}</span>
+                    <span className="request-modal-qty">Qty needed: {Number(item.shortage || item.order_quantity || 0).toFixed(0)}</span>
+                    {item.vendor_item_id}
+                  </span>
                 </button>
               ))}
             </div>
           </div>
 
-          <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
-            <strong>Selected items</strong>
-            <div className="order-items-scroll" style={{ display: "flex", flexDirection: "column", gap: "8px", flex: 1, minHeight: 0, overflowY: "auto", border: "1px solid var(--border)", borderRadius: "10px", padding: "12px", marginTop: "8px" }}>
-              {Object.keys(selected).length === 0 && <span style={{ color: "var(--muted)", fontSize: "0.85rem" }}>No items selected</span>}
+          <div className="request-modal-column">
+            <strong className="request-modal-column-title">Selected items</strong>
+            <div className="request-modal-list">
+              {Object.keys(selected).length === 0 && <span className="request-modal-empty">No items selected</span>}
               {items.filter((item) => selected[item.product_id]).map((item) => (
-                <div key={item.product_id} style={{ padding: "8px", borderRadius: "8px", border: "1px solid var(--border)", background: "var(--panel-strong)" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
-                    <span style={{ fontSize: "0.85rem" }}>{item.sku} - {item.name}</span>
-                    <button type="button" onClick={() => toggleItem(item.product_id)} style={{ padding: "2px 6px", fontSize: "0.7rem" }}>Remove</button>
+                <div key={item.product_id} className="request-modal-selected-card">
+                  <div className="request-modal-selected-header">
+                    <span>{item.sku} - {item.name}</span>
+                    <button type="button" onClick={() => toggleItem(item.product_id)} className="request-modal-remove">Remove</button>
                   </div>
-                  <input style={{ width: "100%" }} type="number" min="1" value={selected[item.product_id]} onChange={(e) => updateQuantity(item.product_id, e.target.value)} />
+                  <input type="number" min="1" value={selected[item.product_id]} onChange={(e) => updateQuantity(item.product_id, e.target.value)} />
                 </div>
               ))}
             </div>
           </div>
         </div>
 
-        <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.75rem" }}>
-          <input type="checkbox" style={{ width: "14px", height: "14px" }} checked={separate} onChange={(e) => setSeparate(e.target.checked)} />
+        <label className="request-modal-separate">
+          <input type="checkbox" checked={separate} onChange={(e) => setSeparate(e.target.checked)} />
           Create separate request per selected item
         </label>
 
-        <div className="edit-modal-actions" style={{ marginTop: "16px" }}>
+        <div className="request-modal-actions">
           <button type="button" onClick={handleSubmit} disabled={submitting}>{submitting ? "Requesting..." : "Submit Request"}</button>
           <button type="button" onClick={onClose}>Close</button>
         </div>
