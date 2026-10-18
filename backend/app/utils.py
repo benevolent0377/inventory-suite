@@ -17,7 +17,8 @@ def compute_urgency(status: str, shortage: float, required: float, order_overhea
     weight = weights.get(status, 0)
     base = weight * 5
     denominator = required if required > 0 else 10
-    severity = min((shortage + order_overhead_days) / denominator, 0.99)
+    weighted_overhead = order_overhead_days * 0.25
+    severity = min((shortage + weighted_overhead) / denominator, 0.99)
     if weight == 0:
         return float(min(20, max(1, 1 + severity)))
     return float(min(20, max(1, base + severity)))
