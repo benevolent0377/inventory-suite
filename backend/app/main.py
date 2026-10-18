@@ -26,6 +26,11 @@ if os.path.exists(DEMO_DB_PATH):
 
 
 def _bootstrap_admin(demo=False, passkey=None):
+    # Ensure an admin user exists and assign a passkey. When no passkey is
+    # supplied, a fresh random key is generated on each server start so that
+    # every production instance gets a unique credential. A caller may supply a
+    # fixed passkey (used for the demo database) when predictable test access is
+    # desired.
     token = set_demo_db(demo)
     try:
         db = SessionLocal()
@@ -51,8 +56,11 @@ def _bootstrap_admin(demo=False, passkey=None):
 
 admin_key = _bootstrap_admin(False)
 import os
+# The normal database gets a fresh random passkey on every server start. The
+# demo database is for testing, so it uses a fixed credential (`admin`) that is
+# predictable for anyone evaluating the application.
 if os.path.exists(DEMO_DB_PATH):
-    _bootstrap_admin(True, passkey=admin_key)
+    _bootstrap_admin(True, passkey="admin")
 
 app = FastAPI(title="Inventory Suite API")
 

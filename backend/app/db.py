@@ -17,7 +17,11 @@ NORMAL_DB_PATH = DB_PATH
 REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 DEMO_DB_PATH = os.path.join(REPO_ROOT, "demo", "inventory.db")
 
-# A ContextVar keeps demo-vs-normal routing isolated between concurrent requests.
+# The normal database (NORMAL_DB_PATH) and the demo database (DEMO_DB_PATH) are
+# intentionally separate files. The demo DB ships with sample data for testing;
+# the normal DB is the user's production data and must never be overwritten with
+# demo data. A ContextVar keeps demo-vs-normal routing isolated between concurrent
+# requests so both databases can be served by the same process.
 _demo_db_var = ContextVar("inventory_demo_db", default=False)
 _engines = {}
 

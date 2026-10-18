@@ -125,6 +125,10 @@ export default function SettingsPage() {
 
       <section className="settings-section">
         <h3>Data & Testing</h3>
+        {/* The demo database and the normal database are completely isolated.
+            Demo mode is only for testing/sample data; toggling it switches which
+            SQLite file the backend reads from. The normal database starts empty
+            and should never be overwritten with demo data. */}
         <label>
           <input
             type="checkbox"
@@ -134,6 +138,15 @@ export default function SettingsPage() {
               setUseDemoDb(next);
               if (next) localStorage.setItem("inventory-demo-db", "true");
               else localStorage.removeItem("inventory-demo-db");
+              // A session token is only valid in the database where it was
+              // created. Switching databases requires logging out and reloading
+              // so all cached data uses the selected DB.
+              if (localStorage.getItem("inventory-token")) {
+                localStorage.removeItem("inventory-token");
+                localStorage.removeItem("inventory-user");
+                window.location.reload();
+                return;
+              }
               notify(next ? "Demo database enabled. Reload the page to apply." : "Normal database enabled. Reload the page to apply.");
             }}
           />

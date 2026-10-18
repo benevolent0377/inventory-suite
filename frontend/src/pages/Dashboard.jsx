@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useMemo, useState, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import RequestItemsModal from "../components/requests/RequestItemsModal";
 import { request } from "../api/client";
@@ -21,11 +21,28 @@ export default function DashboardPage() {
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
   });
-  const [salesMonths, setSalesMonths] = useState([]);
+  // Build the month selector options from actual order dates so the dropdown
+  // always reflects the date ranges present in the active database, even if the
+  // dedicated sales-months endpoint is empty or unavailable.
+  const salesMonths = useMemo(() => {
+    const months = new Set();
+    months.add(`${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}`);
+    for (const order of orders) {
+      const date = order.order_date || order.created_at;
+      if (!date) continue;
+      const d = new Date(date);
+      if (Number.isFinite(d.getTime())) {
+        months.add(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`);
+      }
+    }
+    return Array.from(months).sort().reverse();
+  }, [orders]);
   const [snapshotGraphOpen, setSnapshotGraphOpen] = useState(false);
   const [snapshotGraphLoading, setSnapshotGraphLoading] = useState(false);
   const [snapshotGraphData, setSnapshotGraphData] = useState(null);
   const [snapshotGraphImage, setSnapshotGraphImage] = useState("");
+  // logistics may be empty when the active database has no products; that is
+  // expected for a fresh normal DB and is not a rendering bug.
   const [logistics, setLogistics] = useState({ total_items: 0, total_on_hand: 0, total_inventory_cost: 0, items: [] });
   const [compact, setCompact] = useState(window.innerWidth < 1000);
   const [activeUser, setActiveUser] = useState("");
@@ -83,44 +100,63 @@ export default function DashboardPage() {
   const navigate = useNavigate();
   const [requestModalOpen, setRequestModalOpen] = useState(false);
   const [requestInitialIds, setRequestInitialIds] = useState([]);
+  const [loadError, setLoadError] = useState("");
+  const [loading, setLoading] = useState(true);
 
   const isMounted = useRef(true);
 
   const load = useCallback(async () => {
-    const [products, orderData, logisticsData, monthList, users, requestData] = await Promise.all([
-      request("/api/products"),
-      request("/api/orders"),
-      request("/api/logistics"),
-      request(`/api/stock/sales/months`),
-      request("/api/users"),
-      request("/api/requests"),
-    ]);
-    if (!isMounted.current) return;
+    setLoading(true);
+    setLoadError("");
+    try {
+      // These endpoints read from either the normal or demo database depending on
+      // the X-Demo-DB header, which request() derives from localStorage. If the
+      // normal database is empty, all of these arrays/objects will be empty and
+      // the dashboard will show zero values until data is added or demo mode is on.
+      // Fetch each resource independently so one failing endpoint cannot blank the
+      // entire dashboard, and surface any errors in the browser console.
+      const [products, orderData, logisticsData, monthList, users, requestData] = await Promise.all([
+        request("/api/products").catch((err) => { console.error("Dashboard products failed:", err); return []; }),
+        request("/api/orders").catch((err) => { console.error("Dashboard orders failed:", err); return []; }),
+        request("/api/logistics").catch((err) => { console.error("Dashboard logistics failed:", err); return { items: [] }; }),
+        request("/api/stock/sales/months").catch((err) => { console.error("Dashboard sales months failed:", err); return []; }),
+      // NOTE: salesMonths is derived from order dates via useMemo so the month
+      // selector always reflects the active database's date ranges.
+        request("/api/users").catch((err) => { console.error("Dashboard users failed:", err); return []; }),
+        request("/api/requests").catch((err) => { console.error("Dashboard requests failed:", err); return []; }),
+      ]);
+      if (!isMounted.current) return;
+    // Guard against non-array responses so a single malformed endpoint does not
+    // leave the whole dashboard blank.
+    const safeProducts = Array.isArray(products) ? products : [];
+    const safeOrderData = Array.isArray(orderData) ? orderData : [];
+    const safeLogisticsData = logisticsData && typeof logisticsData === "object" ? logisticsData : { items: [] };
+    const safeUsers = Array.isArray(users) ? users : [];
+    const safeRequestData = Array.isArray(requestData) ? requestData : [];
     const nowForCounts = new Date();
     const thirtyDaysAgo = nowForCounts.getTime() - 30 * 24 * 60 * 60 * 1000;
-    setSalesMonths(Array.isArray(monthList) ? monthList : []);
     setCounts({
-      products: products.length,
-      openOrders: orderData.filter((order) => {
+      products: safeProducts.length,
+      openOrders: safeOrderData.filter((order) => {
         if (order.fulfilled) return false;
         const date = new Date(order.order_date || order.created_at);
         const time = date.getTime();
         return time >= thirtyDaysAgo && time <= nowForCounts.getTime();
       }).length,
-      closedOrders30: orderData.filter((order) => {
+      closedOrders30: safeOrderData.filter((order) => {
         if (!order.fulfilled) return false;
         const date = new Date(order.order_date || order.created_at);
         const time = date.getTime();
         return time >= thirtyDaysAgo && time <= nowForCounts.getTime();
       }).length,
-      backorderItems: logisticsData.items.filter((item) => item.on_hand === 0 && item.required_backstock > 0).length,
-      shortageItems: logisticsData.items.filter((item) => item.shortage > 0 && item.on_hand > 0).length,
-      requestedOpen30: (Array.isArray(requestData) ? requestData : []).filter((requestRow) => requestRow.status === "open" && new Date(requestRow.date_placed || requestRow.created_at).getTime() >= thirtyDaysAgo).length,
+      backorderItems: safeLogisticsData.items.filter((item) => item.on_hand === 0 && item.required_backstock > 0).length,
+      shortageItems: safeLogisticsData.items.filter((item) => item.shortage > 0 && item.on_hand > 0).length,
+      requestedOpen30: safeRequestData.filter((requestRow) => requestRow.status === "open" && new Date(requestRow.date_placed || requestRow.created_at).getTime() >= thirtyDaysAgo).length,
       salesNet: 0,
       salesGross: 0,
     });
-    setOrders(orderData);
-    setLogistics(logisticsData);
+    setOrders(safeOrderData);
+    setLogistics(safeLogisticsData);
     let selectedName = "";
     try {
       const storedUser = JSON.parse(localStorage.getItem("inventory-user") || "null");
@@ -128,21 +164,64 @@ export default function DashboardPage() {
     } catch {
       selectedName = localStorage.getItem("inventory-user") || "";
     }
-    const currentUser = users.find((user) => user.name === selectedName || user.username === selectedName);
+    const currentUser = safeUsers.find((user) => user.name === selectedName || user.username === selectedName);
     setActiveUser(currentUser?.name || currentUser?.username || selectedName || "there");
     const now = new Date();
-    const orderCostMonth = orderData.reduce((sum, order) => {
+    const orderCostMonth = safeOrderData.reduce((sum, order) => {
       const date = new Date(order.order_date || order.created_at);
       if (date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear()) return sum + (order.total_cost || 0);
       return sum;
     }, 0);
     setCounts((current) => ({ ...current, orderCostMonth }));
+      setLoading(false);
+    } catch (err) {
+      if (isMounted.current) {
+        setLoadError(err.message || "Failed to load dashboard data");
+        setLoading(false);
+      }
+    }
   }, []);
 
   useEffect(() => {
-    load().catch(() => {});
+    isMounted.current = true;
+    load().catch((err) => {
+      console.error("Dashboard load failed:", err);
+    });
     return () => {
       isMounted.current = false;
+    };
+  }, [load]);
+
+  // BUG FIX NOTE: The dashboard component mounts behind the login overlay, so
+  // its first data fetch can run before the user has authenticated and before
+  // the "Demonstration Mode?" checkbox has been applied. That first fetch may
+  // hit the empty normal database and leave the counters/tables at zero even
+  // after a successful demo-mode login. We refetch on the login event, on tab
+  // visibility, and on demo-mode storage changes. We also reset isMounted on
+  // every mount so React StrictMode's double-run in development does not bail
+  // out of the second (real) fetch. If counters/tables ever go blank again,
+  // verify these listeners are intact and that isMounted is reset on mount.
+  useEffect(() => {
+    function handleVisibility() {
+      if (document.visibilityState === "visible") {
+        load().catch(() => {});
+      }
+    }
+    function handleStorage(event) {
+      if (event.key === "inventory-demo-db") {
+        load().catch(() => {});
+      }
+    }
+    function handleLogin() {
+      load().catch(() => {});
+    }
+    document.addEventListener("visibilitychange", handleVisibility);
+    window.addEventListener("storage", handleStorage);
+    window.addEventListener("inventory-user-logged-in", handleLogin);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibility);
+      window.removeEventListener("storage", handleStorage);
+      window.removeEventListener("inventory-user-logged-in", handleLogin);
     };
   }, [load]);
 
@@ -256,6 +335,8 @@ export default function DashboardPage() {
     <div className="page dashboard-page">
       <h1 className="dashboard-greeting">Hello, {activeUser}</h1>
       <h2>Dashboard</h2>
+      {loading && <p className="dashboard-loading">Loading dashboard data...</p>}
+      {loadError && <p className="error">{loadError}</p>}
       <div className="stat-grid">
         <div className="stat-card"><span>Products</span><div className="sales-values"><div><span className="sales-label">Products</span><strong>{counts.products}</strong></div><div><span className="sales-label">Backorder</span><strong>{counts.backorderItems}</strong></div><div><span className="sales-label">Shortage</span><strong>{counts.shortageItems}</strong></div></div></div>
         <div className="stat-card"><span>Orders</span><div className="sales-values"><div><span className="sales-label">Open</span><strong>{counts.openOrders}</strong></div><div><span className="sales-label">Closed</span><strong>{counts.closedOrders30}</strong></div><div><span className="sales-label">Requested</span><strong>{counts.requestedOpen30}</strong></div></div></div>

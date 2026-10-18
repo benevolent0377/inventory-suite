@@ -11,6 +11,7 @@ export default function UserGate() {
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [useDemoDb, setUseDemoDb] = useState(() => localStorage.getItem("inventory-demo-db") === "true");
 
   const navigate = useNavigate();
 
@@ -79,6 +80,42 @@ export default function UserGate() {
             <button type="submit" disabled={loading}>{loading ? "Creating..." : "Register"}</button>
           </form>
         )}
+        {/* Demo mode routes all API requests to the demo database. The demo
+            admin passkey is fixed as "admin"; the normal database keeps a
+            freshly-generated passkey printed in the server logs. */}
+        <label
+          className="demo-mode-toggle"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "flex-end",
+            gap: "6px",
+            fontSize: "0.75rem",
+            color: "var(--muted)",
+            marginTop: "12px",
+          }}
+        >
+          <input
+            type="checkbox"
+            checked={useDemoDb}
+              onChange={(e) => {
+                const next = e.target.checked;
+                setUseDemoDb(next);
+                if (next) localStorage.setItem("inventory-demo-db", "true");
+                else localStorage.removeItem("inventory-demo-db");
+                // A session token is only valid in the database where it was
+                // created. Switching databases requires logging out and reloading
+                // so the login form and all cached data use the selected DB.
+                if (localStorage.getItem("inventory-token")) {
+                  localStorage.removeItem("inventory-token");
+                  localStorage.removeItem("inventory-user");
+                  window.location.reload();
+                }
+              }}
+            style={{ width: "14px", height: "14px", margin: 0 }}
+          />
+          Demonstration Mode?
+        </label>
         <div className="user-gate-divider"><span>or</span></div>
         <button type="button" className="secondary" onClick={() => { setError(""); setMode(mode === "login" ? "register" : "login"); }}>
           {mode === "login" ? "Need an account? Register" : "Already have an account? Log in"}
