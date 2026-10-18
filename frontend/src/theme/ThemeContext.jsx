@@ -46,6 +46,7 @@ export function ThemeProvider({ children }) {
     const activeName = readActiveName();
     if (!activeName) return;
 
+    // Apply locally first for immediate feedback; profile persistence is best effort.
     request("/api/users")
       .then((users) => {
         const currentUser = users.find((user) => user.name === activeName || user.username === activeName);

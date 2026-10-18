@@ -25,6 +25,7 @@ export async function request(path, options = {}) {
 
   const key = cacheKey(path, demoDb);
 
+  // Reads may be cached briefly; writes invalidate both normal and demo views.
   if (method === "GET") {
     try {
       const cached = JSON.parse(sessionStorage.getItem(key) || "null");

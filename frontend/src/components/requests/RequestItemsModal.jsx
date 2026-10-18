@@ -56,6 +56,7 @@ export default function RequestItemsModal({ isOpen, onClose, logisticsItems, ini
         delete next[itemId];
       } else {
         const item = items.find((entry) => entry.product_id === itemId);
+        // Match the logistics table's order quantity when pre-filling a request.
         next[itemId] = Math.max(1, Number(item?.order_quantity || item?.shortage || 1));
       }
       return next;
