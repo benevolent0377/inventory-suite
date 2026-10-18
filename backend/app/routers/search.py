@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from .. import models
 from ..db import get_db
+from ..utils import compute_urgency
 
 router = APIRouter(prefix="/search", tags=["search"])
 
@@ -131,8 +132,7 @@ def search(q: str = Query(default=""), db: Session = Depends(get_db)):
             status = "low"
         else:
             status = "healthy"
-        urgency_weight = {"out_of_stock": 4, "critical": 3, "low": 2, "not_tracked": 1, "healthy": 0}.get(status, 0)
-        urgency = float(max(1, urgency_weight * 5))
+        urgency = compute_urgency(status, shortage, required, (product.order_overhead_days or 0) + (product.order_overhead_months or 0) * 30)
         vendor = db.get(models.Vendor, product.vendor_id) if product.vendor_id else None
         logistics_item = {
             "product_id": product.id,

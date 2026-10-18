@@ -541,8 +541,8 @@ button {
   bottom: 0;
   width: 100%;
   height: auto;
-  max-height: 30px;
-  padding: 7px;
+  max-height: 26px;
+  padding: 4px;
   display: flex;
   align-items: center;
   justify-content: flex-end;
@@ -562,10 +562,11 @@ button {
 .bottom-bar button,
 .bottom-bar .status-button,
 .bottom-bar .bottom-settings,
+.bottom-bar .bottom-help,
 .bottom-bar .bottom-shutdown {
-  height: 20px;
-  min-height: 20px;
-  padding: 0 8px;
+  height: 18px;
+  min-height: 18px;
+  padding: 0 6px;
 }
 
 .bottom-bar-actions {
@@ -575,19 +576,109 @@ button {
   margin-left: auto;
 }
 
+.bottom-bar-center {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 12pt;
+  line-height: 1;
+  white-space: nowrap;
+  color: var(--muted);
+  pointer-events: none;
+}
+
 .bottom-settings {
   display: grid;
   place-items: center;
-  width: 26px;
-  height: 26px;
+  width: 22px;
+  height: 22px;
+  padding: 0;
   border-radius: var(--radius);
   background: var(--panel-strong);
   color: var(--text);
   text-decoration: none;
+  border: 1px solid var(--border);
 }
 
 .bottom-settings:hover {
-  transform: rotate(20deg);
+  transform: scale(1.05);
+}
+
+.bottom-help {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border-radius: var(--radius);
+  background: var(--panel-strong);
+  color: var(--text);
+  border: 1px solid var(--border);
+  cursor: pointer;
+}
+
+.bottom-help:hover {
+  transform: scale(1.05);
+}
+
+.help-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(4px);
+}
+
+.help-card {
+  width: min(420px, 100%);
+  max-height: calc(100svh - 32px);
+  overflow: auto;
+  background: var(--panel);
+  backdrop-filter: var(--blur);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 18px;
+}
+
+.help-title {
+  margin: 0 0 12px;
+  color: var(--heading);
+  font-size: 1.1rem;
+}
+
+.help-content {
+  color: var(--text);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.help-content p {
+  margin: 0 0 12px;
+}
+
+.help-content p:last-child {
+  margin-bottom: 0;
+}
+
+.help-content a {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
+.help-content a:hover {
+  color: var(--accent-2);
+}
+
+.help-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
 }
 
 .dashboard-grid {
@@ -930,8 +1021,9 @@ button {
 
 .bottom-logout,
 .bottom-shutdown {
-  height: 26px;
-  width: 26px;
+  height: 22px;
+  width: 22px;
+  padding: 0;
   border-radius: var(--radius);
   background: var(--panel-strong);
   color: var(--text);

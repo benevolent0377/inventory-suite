@@ -21,7 +21,7 @@ export function Sidebar() {
         <div className="logo-mark"><Boxes size={18} /></div>
         <div className="text-wrapper">
           <p className="title">Inventory Suite</p>
-          <p className="version-tag">BETA 3.0.1</p>
+          <p className="version-tag">BETA 3.0.3</p>
         </div>
       </div>
       <div className="sidebar-divider" />

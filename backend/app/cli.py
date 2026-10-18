@@ -4,6 +4,7 @@ from datetime import datetime
 
 from . import models
 from .db import Base, SessionLocal, engine, ensure_schema
+from .utils import compute_urgency
 
 Base.metadata.create_all(bind=engine)
 ensure_schema()
@@ -303,9 +304,9 @@ def cmd_logistics(args):
             status = "low"
         else:
             status = "ok"
-        urgency_weight = {"out": 4, "critical": 3, "low": 2, "not_tracked": 1, "ok": 0}.get(status, 0)
-        urgency = max(1, urgency_weight * 5)
-        print(f"{p.id:>3} {p.sku:<16} {p.name:<20} {on_hand:>7g} {required:>8g} {shortage:>8g} {status:<8} {urgency:>5.1f} {p.cost:>6g}")
+        order_overhead_days = (p.order_overhead_days or 0) + (p.order_overhead_months or 0) * 30
+        urgency = compute_urgency(status, shortage, required, order_overhead_days)
+        print(f"{p.id:>3} {p.sku:<16} {p.name:<20} {on_hand:>7g} {required:>8g} {shortage:>8g} {status:<8} {urgency:>5.2f} {p.cost:>6g}")
     db.close()
 
 

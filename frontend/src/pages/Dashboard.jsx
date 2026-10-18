@@ -237,7 +237,7 @@ export default function DashboardPage() {
               <td>{item.required_backstock}</td>
               <td>{item.shortage}</td>
               <td>{item.status}</td>
-              <td><span style={{ color: `hsl(${120 - ((Number(item.urgency) - 1) / 19) * 120}, 85%, 45%)`, fontWeight: 700 }}>{Number(item.urgency).toFixed(1).padStart(4, "0")}</span></td>
+              <td><span style={{ color: `hsl(${120 - ((Number(item.urgency) - 1) / 19) * 120}, 85%, 45%)`, fontWeight: 700 }}>{Number(item.urgency).toFixed(2)}</span></td>
               <td>{relativeProfitValue(item.cost, item.price)?.toFixed(2) ?? "-"}</td>
               <td>{item.order_quantity}</td>
               <td><button type="button" onClick={() => openRequest(item)}>Request</button></td>
