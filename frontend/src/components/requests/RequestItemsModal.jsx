@@ -20,7 +20,7 @@ export default function RequestItemsModal({ isOpen, onClose, logisticsItems, ini
     const next = {};
     (initialProductIds || []).forEach((id) => {
       const item = items.find((entry) => entry.product_id === id);
-      if (item) next[id] = Math.max(1, Number(item.shortage || item.order_quantity || 1));
+      if (item) next[id] = Math.max(1, Number(item.order_quantity || item.shortage || 1));
     });
     setSelected(next);
   }, [isOpen, initialProductIds, items]);
@@ -56,7 +56,7 @@ export default function RequestItemsModal({ isOpen, onClose, logisticsItems, ini
         delete next[itemId];
       } else {
         const item = items.find((entry) => entry.product_id === itemId);
-        next[itemId] = Math.max(1, Number(item?.shortage || item?.order_quantity || 1));
+        next[itemId] = Math.max(1, Number(item?.order_quantity || item?.shortage || 1));
       }
       return next;
     });
@@ -155,7 +155,7 @@ export default function RequestItemsModal({ isOpen, onClose, logisticsItems, ini
                   <span className="request-modal-item-meta">
                     {item.vendor_name || "No vendor"}
                     <span className={`request-modal-status request-modal-status-${item.status}`}>{item.status}</span>
-                    <span className="request-modal-qty">Qty needed: {Number(item.shortage || item.order_quantity || 0).toFixed(0)}</span>
+                    <span className="request-modal-qty">Qty needed: {Number(item.order_quantity ?? item.shortage ?? 0).toFixed(0)}</span>
                     {item.vendor_item_id}
                   </span>
                 </button>
