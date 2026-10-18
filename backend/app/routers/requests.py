@@ -50,6 +50,7 @@ def _build_item(item_in: schemas.RequestItemCreate, db: Session) -> dict:
     product = db.get(models.Product, item_in.product_id)
     if not product:
         raise HTTPException(status_code=404, detail=f"Product {item_in.product_id} not found")
+    # Keep request lines self-describing if catalog details later change.
     details = _product_logistics(product, db)
     quantity = float(item_in.quantity or 1)
     return {

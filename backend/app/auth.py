@@ -30,6 +30,7 @@ def generate_passkey(length: int = 14) -> str:
 
 
 def hash_passkey(passkey: str) -> str:
+    # Persist only the salted derived key and its parameters, never the passkey.
     salt = os.urandom(SALT_BYTES)
     derived = hashlib.scrypt(
         passkey.encode("utf-8"),
@@ -75,6 +76,7 @@ def _b64_decode(value: str) -> bytes:
 def get_user_by_token(db: Session, raw_token: str | None):
     if not raw_token:
         return None
+    # The browser keeps the opaque token; only its digest is stored server-side.
     token_hash = hashlib.sha256(raw_token.encode("utf-8")).hexdigest()
     session = db.query(models.UserSession).filter(models.UserSession.token_hash == token_hash).first()
     if not session:

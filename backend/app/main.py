@@ -69,6 +69,8 @@ register_routers(app)
 
 @app.middleware("http")
 async def require_auth_and_audit(request, call_next):
+    # Select the database before dependencies create sessions, then restore the
+    # previous context even on early auth rejection or endpoint failure.
     _demo_context_token = set_demo_db(request.headers.get("X-Demo-DB", "").lower() == "true")
     import re
     from .audit import log_activity

@@ -17,6 +17,7 @@ NORMAL_DB_PATH = DB_PATH
 REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 DEMO_DB_PATH = os.path.join(REPO_ROOT, "demo", "inventory.db")
 
+# A ContextVar keeps demo-vs-normal routing isolated between concurrent requests.
 _demo_db_var = ContextVar("inventory_demo_db", default=False)
 _engines = {}
 
@@ -43,6 +44,7 @@ def _create_engine(path):
 
 
 def get_engine():
+    # Cache engines by path, while resolving the path from this request's context.
     if _demo_db_var.get() and os.path.exists(DEMO_DB_PATH):
         path = DEMO_DB_PATH
     else:
@@ -75,6 +77,8 @@ engine = get_engine()  # default (normal) engine for startup/schema compatibilit
 
 
 def ensure_schema(engine=None):
+    # This compatibility pass is intentionally additive; complex data migrations
+    # should be handled explicitly rather than silently rewritten at startup.
     from sqlalchemy import inspect, text
 
     if engine is None:

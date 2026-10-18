@@ -141,6 +141,8 @@ def checkin_item(
     item.checked_in = checked_in
 
     delta = 0.0
+    # Inventory changes only on a state transition, so retries/toggling do not
+    # apply the ordered quantity twice.
     if checked_in and not previous:
         delta = item.quantity
     elif previous and not checked_in:

@@ -170,6 +170,7 @@ def product_stats(product_id: int, date_range: str = Query(default="30"), db: Se
         qty = abs(float(movement.quantity or 0))
         sales_by_day[move_date] = sales_by_day.get(move_date, 0) + qty
 
+    # Reduce chart point count for longer ranges so the UI remains readable.
     bucket_size = 1
     if date_range == "30":
         bucket_size = 3

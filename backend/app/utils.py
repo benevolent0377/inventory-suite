@@ -17,6 +17,7 @@ def compute_urgency(status: str, shortage: float, required: float, order_overhea
     weight = weights.get(status, 0)
     base = weight * 5
     denominator = required if required > 0 else 10
+    # Lead-time overhead is deliberately quarter-weighted relative to shortage.
     weighted_overhead = order_overhead_days * 0.25
     severity = min((shortage + weighted_overhead) / denominator, 0.99)
     if weight == 0:
