@@ -134,18 +134,37 @@ export default function RequestItemsModal({ isOpen, onClose, logisticsItems, ini
           </label>
         </div>
 
-        <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", marginBottom: "12px" }}>
-          <strong>Available items</strong>
-          <div className="order-items-scroll" style={{ display: "flex", flexDirection: "column", gap: "8px", flex: 1, minHeight: 0, overflowY: "auto", border: "1px solid var(--border)", borderRadius: "10px", padding: "12px", marginTop: "8px" }}>
-            {filtered.map((item) => (
-              <label key={item.product_id} style={{ display: "flex", alignItems: "flex-start", gap: "8px", borderBottom: "1px solid var(--border)", paddingBottom: "8px" }}>
-                <input type="checkbox" style={{ width: "14px", height: "14px", marginTop: "2px" }} checked={Boolean(selected[item.product_id])} onChange={() => toggleItem(item.product_id)} />
-                <span style={{ flex: 1, fontSize: "0.85rem" }}>{item.sku} - {item.name}<br />{item.vendor_name || "No vendor"} - {item.status}{item.vendor_item_id ? ` - ${item.vendor_item_id}` : ""}</span>
-                {selected[item.product_id] ? (
-                  <input style={{ width: "64px" }} type="number" min="1" value={selected[item.product_id]} onChange={(e) => updateQuantity(item.product_id, e.target.value)} />
-                ) : null}
-              </label>
-            ))}
+        <div style={{ flex: 1, minHeight: 0, display: "flex", gap: "12px", marginBottom: "12px" }}>
+          <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
+            <strong>Available items</strong>
+            <div className="order-items-scroll" style={{ display: "flex", flexDirection: "column", gap: "8px", flex: 1, minHeight: 0, overflowY: "auto", border: "1px solid var(--border)", borderRadius: "10px", padding: "12px", marginTop: "8px" }}>
+              {filtered.filter((item) => !selected[item.product_id]).map((item) => (
+                <button
+                  key={item.product_id}
+                  type="button"
+                  onClick={() => toggleItem(item.product_id)}
+                  style={{ textAlign: "left", padding: "8px", borderRadius: "8px", border: "1px solid var(--border)", background: "var(--panel-strong)", color: "var(--text)", cursor: "pointer" }}
+                >
+                  <span style={{ fontSize: "0.85rem" }}>{item.sku} - {item.name}<br />{item.vendor_name || "No vendor"} - {item.status}{item.vendor_item_id ? ` - ${item.vendor_item_id}` : ""}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
+            <strong>Selected items</strong>
+            <div className="order-items-scroll" style={{ display: "flex", flexDirection: "column", gap: "8px", flex: 1, minHeight: 0, overflowY: "auto", border: "1px solid var(--border)", borderRadius: "10px", padding: "12px", marginTop: "8px" }}>
+              {Object.keys(selected).length === 0 && <span style={{ color: "var(--muted)", fontSize: "0.85rem" }}>No items selected</span>}
+              {items.filter((item) => selected[item.product_id]).map((item) => (
+                <div key={item.product_id} style={{ padding: "8px", borderRadius: "8px", border: "1px solid var(--border)", background: "var(--panel-strong)" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
+                    <span style={{ fontSize: "0.85rem" }}>{item.sku} - {item.name}</span>
+                    <button type="button" onClick={() => toggleItem(item.product_id)} style={{ padding: "2px 6px", fontSize: "0.7rem" }}>Remove</button>
+                  </div>
+                  <input style={{ width: "100%" }} type="number" min="1" value={selected[item.product_id]} onChange={(e) => updateQuantity(item.product_id, e.target.value)} />
+                </div>
+              ))}
+            </div>
           </div>
         </div>
 

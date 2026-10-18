@@ -124,7 +124,14 @@ const [orderSort, setOrderSort] = useState("desc");
       const createdOrder = await request("/api/orders", {
         method: "POST",
         body: JSON.stringify({
-          placed_by: placedBy,
+          placed_by: (() => {
+      try {
+        const stored = JSON.parse(localStorage.getItem("inventory-user") || "null");
+        return stored?.username || stored?.name || (typeof stored === "string" ? stored : placedBy || "anonymous");
+      } catch {
+        return localStorage.getItem("inventory-user") || placedBy || "anonymous";
+      }
+    })(),
           vendor_id: vendorId === "" ? null : Number(vendorId),
           tracking_number: tracking,
           items: items
@@ -226,12 +233,6 @@ const [orderSort, setOrderSort] = useState("desc");
             content: (
               <form className="order-create-form" onSubmit={handleSubmit}>
         <div className="order-create-left">
-          <label>Placed By
-            <select value={placedBy} onChange={(e) => setPlacedBy(e.target.value)} required>
-              <option value="">Select user</option>
-              {users.map((user) => <option key={user.id} value={user.name}>{user.name}</option>)}
-            </select>
-          </label>
           <label>Vendor
             <select value={vendorId} onChange={(e) => setVendorId(e.target.value)}>
               <option value="">None</option>

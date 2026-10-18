@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { request } from "../api/client";
 
 import { formatMoney } from "../utils/currency";
@@ -59,10 +59,10 @@ export default function SearchPage() {
         <section className="search-section">
           <h3>Products</h3>
           <table className="data-table">
-            <thead><tr><th>ID</th><th>SKU</th><th>Name</th><th>Category</th><th>Vendor</th><th>Price</th><th>Cost</th></tr></thead>
+            <thead><tr><th>ID</th><th>SKU</th><th>Name</th><th>Category</th><th>Vendor</th><th>Price</th><th>Cost</th><th>Actions</th></tr></thead>
             <tbody>
               {results.products.map((item) => (
-                <tr key={item.id}><td>{item.id}</td><td>{item.sku}</td><td>{item.name}</td><td>{item.category}</td><td>{item.vendor || "-"}</td><td>{formatMoney(item.price)}</td><td>{formatMoney(item.cost)}</td></tr>
+                <tr key={item.id}><td>{item.id}</td><td>{item.sku}</td><td>{item.name}</td><td>{item.category}</td><td>{item.vendor || "-"}</td><td>{formatMoney(item.price)}</td><td>{formatMoney(item.cost)}</td><td><Link to={`/products?q=${encodeURIComponent(query)}&tab=items`}><button type="button">Jump to</button></Link></td></tr>
               ))}
             </tbody>
           </table>
@@ -73,10 +73,10 @@ export default function SearchPage() {
         <section className="search-section">
           <h3>Vendors</h3>
           <table className="data-table">
-            <thead><tr><th>ID</th><th>Name</th><th>Contact</th><th>Email</th><th>Phone</th></tr></thead>
+            <thead><tr><th>ID</th><th>Name</th><th>Contact</th><th>Email</th><th>Phone</th><th>Actions</th></tr></thead>
             <tbody>
               {results.vendors.map((item) => (
-                <tr key={item.id}><td>{item.id}</td><td>{item.name}</td><td>{item.contact_name}</td><td>{item.email}</td><td>{item.phone}</td></tr>
+                <tr key={item.id}><td>{item.id}</td><td>{item.name}</td><td>{item.contact_name}</td><td>{item.email}</td><td>{item.phone}</td><td><Link to={`/vendors?q=${encodeURIComponent(query)}&tab=vendors`}><button type="button">Jump to</button></Link></td></tr>
               ))}
             </tbody>
           </table>
@@ -87,10 +87,10 @@ export default function SearchPage() {
         <section className="search-section">
           <h3>Orders</h3>
           <table className="data-table">
-            <thead><tr><th>ID</th><th>Placed By</th><th>Vendor</th><th>Tracking</th><th>Total</th><th>Status</th><th>Items</th></tr></thead>
+            <thead><tr><th>ID</th><th>Placed By</th><th>Vendor</th><th>Tracking</th><th>Total</th><th>Status</th><th>Items</th><th>Actions</th></tr></thead>
             <tbody>
               {results.orders.map((item) => (
-                <tr key={item.id}><td>{item.id}</td><td>{item.placed_by}</td><td>{item.vendor || "-"}</td><td>{item.tracking_number || "-"}</td><td>{formatMoney(item.total_cost)}</td><td>{item.fulfilled ? "Fulfilled" : "Unfulfilled"}</td><td>{item.item_count}</td></tr>
+                <tr key={item.id}><td>{item.id}</td><td>{item.placed_by}</td><td>{item.vendor || "-"}</td><td>{item.tracking_number || "-"}</td><td>{formatMoney(item.total_cost)}</td><td>{item.fulfilled ? "Fulfilled" : "Unfulfilled"}</td><td>{item.item_count}</td><td><Link to={`/orders?q=${encodeURIComponent(query)}&tab=orders`}><button type="button">Jump to</button></Link></td></tr>
               ))}
             </tbody>
           </table>
@@ -101,10 +101,10 @@ export default function SearchPage() {
         <section className="search-section">
           <h3>Logistics</h3>
           <table className="data-table">
-            <thead><tr><th>SKU</th><th>Name</th><th>On Hand</th><th>Required</th><th>Shortage</th><th>Status</th><th>Urgency</th><th>Order Qty</th></tr></thead>
+            <thead><tr><th>SKU</th><th>Name</th><th>On Hand</th><th>Required</th><th>Shortage</th><th>Status</th><th>Urgency</th><th>Order Qty</th><th>Actions</th></tr></thead>
             <tbody>
               {(results.logistics || []).map((item) => (
-                <tr key={item.product_id}><td>{item.sku}</td><td>{item.name}</td><td>{item.on_hand}</td><td>{item.required_backstock}</td><td>{item.shortage}</td><td>{item.status}</td><td><span style={{ color: `hsl(${120 - ((Number(item.urgency) - 1) / 19) * 120}, 85%, 45%)`, fontWeight: 700 }}>{Number(item.urgency).toFixed(1).padStart(4, "0")}</span></td><td>{item.order_quantity}</td></tr>
+                <tr key={item.product_id}><td>{item.sku}</td><td>{item.name}</td><td>{item.on_hand}</td><td>{item.required_backstock}</td><td>{item.shortage}</td><td>{item.status}</td><td><span style={{ color: `hsl(${120 - ((Number(item.urgency) - 1) / 19) * 120}, 85%, 45%)`, fontWeight: 700 }}>{Number(item.urgency).toFixed(1).padStart(4, "0")}</span></td><td>{item.order_quantity}</td><td><Link to={`/products?q=${encodeURIComponent(query)}&tab=logistics`}><button type="button">Jump to</button></Link></td></tr>
               ))}
             </tbody>
           </table>

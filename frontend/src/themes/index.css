@@ -561,7 +561,8 @@ button {
 
 .bottom-bar button,
 .bottom-bar .status-button,
-.bottom-bar .bottom-settings {
+.bottom-bar .bottom-settings,
+.bottom-bar .bottom-shutdown {
   height: 20px;
   min-height: 20px;
   padding: 0 8px;
@@ -927,7 +928,8 @@ button {
   color: var(--heading);
 }
 
-.bottom-logout {
+.bottom-logout,
+.bottom-shutdown {
   height: 26px;
   width: 26px;
   border-radius: var(--radius);
@@ -939,7 +941,12 @@ button {
   cursor: pointer;
 }
 
-.bottom-logout:hover {
+.bottom-shutdown {
+  margin-right: auto;
+}
+
+.bottom-logout:hover,
+.bottom-shutdown:hover {
   transform: scale(1.05);
 }
 
@@ -1060,7 +1067,8 @@ select {
   margin-top: 6px;
   width: auto;
   max-width: 100%;
-  padding: 8px 10px;
+  height: fit-content;
+  padding: 0;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--panel-strong);
@@ -1299,6 +1307,17 @@ textarea:focus {
   display: flex;
   justify-content: flex-end;
   gap: 8px;
+}
+
+.prompt-input {
+  width: 100%;
+  margin-bottom: 14px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--input-bg, var(--panel-strong));
+  color: var(--text);
+  font-size: 0.9rem;
 }
 
 .danger-button {

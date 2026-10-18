@@ -25,6 +25,12 @@ const emptyForm = {
   vendor_item_id: "",
 };
 
+function relativeProfitValue(cost, price) {
+  const numericCost = Number(cost);
+  const numericPrice = Number(price);
+  return numericCost > 0 && Number.isFinite(numericPrice) ? numericPrice / numericCost : null;
+}
+
 export default function ProductsPage() {
   const [searchParams] = useSearchParams();
   const [products, setProducts] = useState([]);
@@ -344,7 +350,7 @@ export default function ProductsPage() {
               <div className="dashboard-panel">
                 <h3>Logistics</h3>
                 <table className="data-table">
-                  <thead><tr><th>SKU</th><th>Name</th><th>On Hand</th><th>Required</th><th>Shortage</th><th>Status</th><th>Urgency</th><th>Order Qty</th><th>Actions</th></tr></thead>
+                  <thead><tr><th>SKU</th><th>Name</th><th>On Hand</th><th>Required</th><th>Shortage</th><th>Status</th><th>Urgency</th><th>RPV</th><th>Order Qty</th><th>Actions</th></tr></thead>
                   <tbody>
                     {(Array.isArray(logistics) ? logistics : (logistics.items || [])).map((item) => (
                       <tr key={item.product_id}>
@@ -354,7 +360,8 @@ export default function ProductsPage() {
                         <td>{item.required_backstock}</td>
                         <td>{item.shortage}</td>
                         <td>{item.status}</td>
-                        <td><span style={{ fontWeight: 700 }}>{Number(item.urgency).toFixed(1).padStart(4, "0")}</span></td>
+                        <td><span style={{ color: `hsl(${120 - ((Number(item.urgency) - 1) / 19) * 120}, 85%, 45%)`, fontWeight: 700 }}>{Number(item.urgency).toFixed(1).padStart(4, "0")}</span></td>
+                        <td>{relativeProfitValue(item.cost, item.price)?.toFixed(2) ?? "-"}</td>
                         <td>{item.order_quantity}</td>
                         <td><button type="button" onClick={() => { setRequestInitialIds([item.product_id]); setRequestModalOpen(true); }}>Request</button></td>
                       </tr>

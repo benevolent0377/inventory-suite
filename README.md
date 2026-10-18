@@ -12,6 +12,11 @@ Inventory Suite is a full-stack inventory and order management app built with a 
 - User login, settings, and theme support
 - Terminal-style CLI for inventory operations
 
+## User documentation
+
+- [User Guide](docs/USER_GUIDE.md): navigation and everyday inventory, orders, and requests workflows.
+- [Support Guide](docs/SUPPORT.md): common access, search, stock, and service troubleshooting.
+
 ## Development
 
 Backend:

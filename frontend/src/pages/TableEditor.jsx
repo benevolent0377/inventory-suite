@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { request } from "../api/client";
 import TabbedCard from "../components/ui/TabbedCard";
 import { confirm } from "../utils/confirm";
@@ -20,7 +20,7 @@ function TableEditorTab({ tableName, columns }) {
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState({});
 
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true);
     setError("");
     try {
@@ -32,9 +32,9 @@ function TableEditorTab({ tableName, columns }) {
     } finally {
       setLoading(false);
     }
-  }
+  }, [tableName]);
 
-  useEffect(() => { load(); }, [tableName]);
+  useEffect(() => { load(); }, [tableName, load]);
 
   function startEdit(row) {
     setEditingId(row[pk]);

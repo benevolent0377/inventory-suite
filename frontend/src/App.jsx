@@ -9,10 +9,14 @@ import Notifier from "./components/notify/Notifier";
 import SearchPage from "./pages/Search";
 import { useTheme } from "./theme/useTheme";
 import { Link } from "react-router-dom";
-import { Cog, DoorOpen } from "lucide-react";
+import { Cog, DoorOpen, Power } from "lucide-react";
 import { StatusDropdown } from "./components/status/StatusDropdown";
 import ConfirmDialog from "./components/confirm/ConfirmDialog";
+import PromptPasskeyDialog from "./components/confirm/PromptPasskeyDialog";
 import { confirm } from "./utils/confirm";
+import { promptPasskey } from "./utils/promptPasskey";
+import { request } from "./api/client";
+import { notify } from "./utils/notify";
 
 import "./themes/index.css";
 import "./themes/allThemes.css";
@@ -85,6 +89,30 @@ function AppFrame() {
         </main>
       </div>
       <div className="bottom-bar">
+          <button
+          type="button"
+          className="bottom-shutdown"
+          onClick={async () => {
+            if (!(await confirm("Shut down the inventory suite? All active sessions will be suspended."))) return;
+            const adminPasskey = await promptPasskey("Enter the administrator passkey to confirm shutdown");
+            if (adminPasskey == null) return;
+            try {
+              await request("/api/maintenance/shutdown", {
+                method: "POST",
+                body: JSON.stringify({ admin_passkey: adminPasskey }),
+              });
+              localStorage.removeItem("inventory-user");
+              localStorage.removeItem("inventory-token");
+              notify("Inventory Suite is shutting down");
+              window.location.assign("/");
+            } catch (err) {
+              notify(err.message);
+            }
+          }}
+          title="Shut down"
+        >
+          <Power size={16} />
+        </button>
         <div className="bottom-bar-actions">
           <StatusDropdown />
           <button type="button" className="bottom-logout" onClick={async () => { if (!(await confirm("Log out?"))) return; localStorage.removeItem("inventory-user"); localStorage.removeItem("inventory-token"); window.location.assign("/"); }} title="Log out">
@@ -105,6 +133,7 @@ function AppFrame() {
         </div>
       )}
       <ConfirmDialog />
+      <PromptPasskeyDialog />
       <Notifier />
     </div>
   );
