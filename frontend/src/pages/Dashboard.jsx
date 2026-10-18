@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import RequestItemsModal from "../components/requests/RequestItemsModal";
 import { request } from "../api/client";
@@ -84,66 +84,67 @@ export default function DashboardPage() {
   const [requestModalOpen, setRequestModalOpen] = useState(false);
   const [requestInitialIds, setRequestInitialIds] = useState([]);
 
-  useEffect(() => {
-    let active = true;
-    async function load() {
-      const [products, orderData, logisticsData, monthList, users, requestData] = await Promise.all([
-        request("/api/products"),
-        request("/api/orders"),
-        request("/api/logistics"),
-        request(`/api/stock/sales/months`),
-        request("/api/users"),
-        request("/api/requests"),
-      ]);
-      if (active) {
-        const nowForCounts = new Date();
-        const thirtyDaysAgo = nowForCounts.getTime() - 30 * 24 * 60 * 60 * 1000;
-        setSalesMonths(Array.isArray(monthList) ? monthList : []);
-        setCounts({
-          products: products.length,
-          openOrders: orderData.filter((order) => {
-            if (order.fulfilled) return false;
-            const date = new Date(order.order_date || order.created_at);
-            const time = date.getTime();
-            return time >= thirtyDaysAgo && time <= nowForCounts.getTime();
-          }).length,
-          closedOrders30: orderData.filter((order) => {
-            if (!order.fulfilled) return false;
-            const date = new Date(order.order_date || order.created_at);
-            const time = date.getTime();
-            return time >= thirtyDaysAgo && time <= nowForCounts.getTime();
-          }).length,
-          backorderItems: logisticsData.items.filter((item) => item.on_hand === 0 && item.required_backstock > 0).length,
-          shortageItems: logisticsData.items.filter((item) => item.shortage > 0 && item.on_hand > 0).length,
-          requestedOpen30: (Array.isArray(requestData) ? requestData : []).filter((requestRow) => requestRow.status === "open" && new Date(requestRow.date_placed || requestRow.created_at).getTime() >= thirtyDaysAgo).length,
-          salesNet: 0,
-          salesGross: 0,
-        });
-        setOrders(orderData);
-        setLogistics(logisticsData);
-        let selectedName = "";
-        try {
-          const storedUser = JSON.parse(localStorage.getItem("inventory-user") || "null");
-          selectedName = storedUser?.name || storedUser?.username || (typeof storedUser === "string" ? storedUser : "");
-        } catch {
-          selectedName = localStorage.getItem("inventory-user") || "";
-        }
-        const currentUser = users.find((user) => user.name === selectedName || user.username === selectedName);
-        setActiveUser(currentUser?.name || currentUser?.username || selectedName || "there");
-        const now = new Date();
-        const orderCostMonth = orderData.reduce((sum, order) => {
-          const date = new Date(order.order_date || order.created_at);
-          if (date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear()) return sum + (order.total_cost || 0);
-          return sum;
-        }, 0);
-        setCounts((current) => ({ ...current, orderCostMonth }));
-      }
+  const isMounted = useRef(true);
+
+  const load = useCallback(async () => {
+    const [products, orderData, logisticsData, monthList, users, requestData] = await Promise.all([
+      request("/api/products"),
+      request("/api/orders"),
+      request("/api/logistics"),
+      request(`/api/stock/sales/months`),
+      request("/api/users"),
+      request("/api/requests"),
+    ]);
+    if (!isMounted.current) return;
+    const nowForCounts = new Date();
+    const thirtyDaysAgo = nowForCounts.getTime() - 30 * 24 * 60 * 60 * 1000;
+    setSalesMonths(Array.isArray(monthList) ? monthList : []);
+    setCounts({
+      products: products.length,
+      openOrders: orderData.filter((order) => {
+        if (order.fulfilled) return false;
+        const date = new Date(order.order_date || order.created_at);
+        const time = date.getTime();
+        return time >= thirtyDaysAgo && time <= nowForCounts.getTime();
+      }).length,
+      closedOrders30: orderData.filter((order) => {
+        if (!order.fulfilled) return false;
+        const date = new Date(order.order_date || order.created_at);
+        const time = date.getTime();
+        return time >= thirtyDaysAgo && time <= nowForCounts.getTime();
+      }).length,
+      backorderItems: logisticsData.items.filter((item) => item.on_hand === 0 && item.required_backstock > 0).length,
+      shortageItems: logisticsData.items.filter((item) => item.shortage > 0 && item.on_hand > 0).length,
+      requestedOpen30: (Array.isArray(requestData) ? requestData : []).filter((requestRow) => requestRow.status === "open" && new Date(requestRow.date_placed || requestRow.created_at).getTime() >= thirtyDaysAgo).length,
+      salesNet: 0,
+      salesGross: 0,
+    });
+    setOrders(orderData);
+    setLogistics(logisticsData);
+    let selectedName = "";
+    try {
+      const storedUser = JSON.parse(localStorage.getItem("inventory-user") || "null");
+      selectedName = storedUser?.name || storedUser?.username || (typeof storedUser === "string" ? storedUser : "");
+    } catch {
+      selectedName = localStorage.getItem("inventory-user") || "";
     }
+    const currentUser = users.find((user) => user.name === selectedName || user.username === selectedName);
+    setActiveUser(currentUser?.name || currentUser?.username || selectedName || "there");
+    const now = new Date();
+    const orderCostMonth = orderData.reduce((sum, order) => {
+      const date = new Date(order.order_date || order.created_at);
+      if (date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear()) return sum + (order.total_cost || 0);
+      return sum;
+    }, 0);
+    setCounts((current) => ({ ...current, orderCostMonth }));
+  }, []);
+
+  useEffect(() => {
     load().catch(() => {});
     return () => {
-      active = false;
+      isMounted.current = false;
     };
-  }, []);
+  }, [load]);
 
   useEffect(() => {
     function handleResize() {
@@ -305,7 +306,7 @@ export default function DashboardPage() {
         logisticsItems={logistics.items}
         initialProductIds={requestInitialIds}
         currentUser={(() => { try { const u = JSON.parse(localStorage.getItem("inventory-user") || "null"); return u?.username || u?.name || "anonymous"; } catch { return "anonymous"; } })()}
-        onCreated={() => load()}
+        onCreated={() => load().catch(() => {})}
       />
       {snapshotGraphOpen && (
         <div className="edit-modal-overlay" onClick={() => setSnapshotGraphOpen(false)}>
