@@ -139,6 +139,11 @@ SQLAlchemy models in `backend/app/models.py` map to SQLite tables:
 | `User` / `users` | User profile and credentials | Name/username, theme, scrypt passkey hash and admin flag. |
 | `UserSession` / `user_sessions` | Bearer-token session | User, token hash, expiry and client host. |
 | `ActivityLog` / `activity_logs` | Audit trail | Actor, action, entity, result, client host and timestamp. |
+| `MessageThread` / `message_threads` | Conversation container | Direct or group thread name. |
+| `MessageThreadParticipant` / `message_thread_participants` | Thread membership | Links users to threads. |
+| `Message` / `messages` | Internal mail message | Sender, thread, body, reply parent and forwarded source. |
+| `MessageReadReceipt` / `message_read_receipts` | Per-user read tracking | `read_at` timestamp for each recipient. |
+| `MessageDeletion` / `message_deletions` | Per-user soft delete | `deleted_at` so users can hide messages from their own view. |
 
 Pydantic API DTOs are in `backend/app/schemas.py`; auth-specific request/response models and maintenance request models live beside their routers. The schema bootstrap in `db.ensure_schema()` creates new tables and adds missing columns, then backfills selected legacy values. For structural migrations that require data transforms, use an explicit migration rather than relying on the additive compatibility helper.
 
@@ -198,6 +203,15 @@ API routers are mounted under `/api` except the health checks. Payload/response 
 | `PUT /api/users/{id}` | `users.update_user` | User updates own profile; admins may update another profile. |
 | `DELETE /api/users/{id}` | `users.delete_user` | Admin deletes a user. |
 | `GET /api/help` | `help.help_text` | Return generated CLI usage text. |
+| `GET /api/messages/threads` | `messages.list_threads` | List current user's conversation threads with last message and unread count. |
+| `GET /api/messages/threads/{id}` | `messages.get_thread_messages` | Messages in a thread, excluding messages deleted by the current user. |
+| `POST /api/messages` | `messages.create_message` | Send a message. Creates a direct thread or group thread if `thread_id` is omitted. |
+| `POST /api/messages/{id}/reply` | `messages.reply_to_message` | Reply in the same thread. |
+| `POST /api/messages/{id}/forward` | `messages.forward_message` | Forward a message to another thread or recipient list. |
+| `PATCH /api/messages/{id}/read` | `messages.mark_read` | Mark message read for current user. |
+| `PATCH /api/messages/{id}/unread` | `messages.mark_unread` | Mark message unread for current user. |
+| `DELETE /api/messages/{id}` | `messages.delete_message` | Soft-delete message for current user. |
+| `GET /api/messages/unread-count` | `messages.unread_count` | Total unread messages for badge. |
 | `POST /api/maintenance/tables/clear` | `maintenance.clear_tables` | Admin clears selected tables after a database backup. |
 | `POST /api/maintenance/shutdown` | `maintenance.shutdown` | Verify admin passkey, revoke sessions and terminate service. Returns 403 for a wrong passkey. |
 
@@ -405,6 +419,20 @@ Router-local Pydantic classes (`LoginRequest`, `RegisterRequest`, `TokenResponse
 - `shutdown(payload, user)` — Verify an administrator passkey, revoke all sessions and schedule process termination.
 - `_shutdown()` — Send SIGTERM to the current process after the HTTP response can return.
 
+### Mail routes
+
+`backend/app/routers/messages.py`:
+
+- `list_threads(db, user)` — Return the current user's threads with participant names, last message preview and unread count.
+- `get_thread_messages(thread_id, db, user)` — Return visible messages for a thread, ordered oldest first.
+- `create_message(payload, db, user)` — Send a message, creating a direct or group thread as needed.
+- `reply_to_message(message_id, payload, db, user)` — Post a reply in the same thread.
+- `forward_message(message_id, payload, db, user)` — Forward a message to another thread or recipient list.
+- `mark_read(message_id, db, user)` / `mark_unread(message_id, db, user)` — Toggle read receipt for the current user.
+- `delete_message(message_id, db, user)` — Soft-delete a message for the current user.
+- `unread_count(db, user)` — Total unread messages for the badge.
+- `_find_direct_thread(db, user_a, user_b)` — Locate an existing two-user direct thread.
+
 ### CLI functions in `backend/app/cli.py`
 
 - `session()` — Open a SQLAlchemy session using the active normal database engine.
@@ -443,7 +471,7 @@ This catalog covers every named function/component in `frontend/src/`. Anonymous
 
 - `App()` — Mount the router and register unload behavior that clears session identity on normal tab close, while preserving it on reload.
 - `handleBeforeUnload()` — Remove stored user and token for non-reload navigation/unload.
-- `AppFrame()` — Render the persistent frame, page routes, footer actions, global authentication/dialog components and help popup.
+- `AppFrame()` — Render the persistent frame, page routes, footer actions, global authentication/dialog components, help popup and mail popup.
 - `handleLogin()` — Show the post-login reminder sequence in response to the `inventory-user-logged-in` event.
 
 `frontend/src/routes/appRoutes.jsx` — `appRoutes` is configuration rather than a function; it maps page paths to labels/icons/elements and marks admin-only routes.
@@ -559,6 +587,21 @@ This catalog covers every named function/component in `frontend/src/`. Anonymous
 
 - `Notifier()` — Listen for notice events and render a transient accessible notice.
 - `handleNotice(event)` — Replace the current notice and reset its dismissal timer.
+
+`frontend/src/components/mail/MailButton.jsx`:
+
+- `MailButton({onClick})` — Poll `/api/messages/unread-count` every 60 seconds and render a mail icon with an unread badge.
+
+`frontend/src/components/mail/MailPopup.jsx`:
+
+- `MailPopup({isOpen, onClose})` — Full-app messaging overlay with conversation list and message thread.
+- `loadConversations()` / `loadMessages(threadId)` — Fetch threads and messages for the current database.
+- `handleSend(body)` — Send, reply to, or forward a message and refresh the view.
+- `ComposeArea(...)` — Text input for new messages, replies and forwards.
+
+`frontend/src/components/mail/NewMessageModal.jsx`:
+
+- `NewMessageModal({isOpen, onClose, onSent})` — Recipient picker and compose form for starting a direct or group conversation.
 
 `frontend/src/components/layout/Sidebar/Sidebar.jsx`:
 

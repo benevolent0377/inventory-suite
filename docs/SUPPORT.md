@@ -59,6 +59,20 @@ Theme, text size, layout density, and motion settings update in the browser. If 
 
 Check whether **Use demo database** is enabled under **Settings → Data & Testing**. Reload after changing it. The demo database is separate from the normal database.
 
+## Internal mail
+
+### My unread badge is not updating
+
+The badge checks for new messages every 60 seconds. Open the mail overlay to force an immediate refresh.
+
+### I cannot see a message I received
+
+Delete only hides messages from your own view; the sender and other participants can still see them. If a message is missing for everyone, ask an administrator to check the `messages` table in **Table Editor**.
+
+### I cannot message a user
+
+Only existing users can be messaged. Administrators can create accounts from **Settings → User Management**.
+
 ## The web app was shut down
 
 The bottom-bar power button stops the backend and deletes active user sessions. It requires an administrator passkey, even if a different user is signed in. All users must sign in again after the service is restarted. Contact the server operator to restart it. In a local development checkout, the frontend's `npm run backend` command starts the backend (from the `frontend` directory).

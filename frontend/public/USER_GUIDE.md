@@ -66,6 +66,14 @@ Administrators can open **Activity** to filter the audit log and **Table Editor*
 
 The power button at the far left of the bottom bar shuts down the web application and suspends all active user sessions. After the confirmation prompt, enter an administrator passkey. This affects everyone using the app; use it only when the service should be stopped. A server operator must start the backend again before users can sign in.
 
+## Internal mail
+
+Select the **mail icon** in the bottom bar to open the messaging overlay. The left panel lists your conversations; select one to view its messages. Use **New Message** to start a conversation with one or more users. Selecting multiple recipients creates a group thread.
+
+In a conversation, hover over a message to reveal **Reply**, **Forward**, **Mark read/unread**, and **Delete**. Reply keeps the message in the same thread. Forward sends the message to another user or existing thread. Delete removes the message only from your own view.
+
+The mail icon shows an unread-count badge and checks for new messages every minute.
+
 ## Quick workflow
 
 For a routine restock: check the Dashboard or Products logistics table → submit a request for items with a shortage → open the request under Orders → Fill → create the order → check items in as they arrive.

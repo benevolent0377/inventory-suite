@@ -205,3 +205,58 @@ class LogisticsRead(BaseModel):
     total_on_hand: float
     total_inventory_cost: float
     items: List[LogisticsItem]
+
+
+class MessageThreadCreate(BaseModel):
+    name: str = ""
+    is_group: bool = False
+    recipient_ids: List[int] = []
+
+
+class MessageThreadRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    name: str = ""
+    is_group: bool = False
+    created_at: Optional[datetime] = None
+
+
+class MessageThreadParticipantRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    user_id: int
+
+
+class MessageCreate(BaseModel):
+    thread_id: Optional[int] = None
+    body: str
+    recipient_ids: List[int] = []
+    name: str = ""
+
+
+class MessageRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    thread_id: int
+    sender_id: Optional[int] = None
+    body: str
+    parent_id: Optional[int] = None
+    forwarded_from_id: Optional[int] = None
+    created_at: Optional[datetime] = None
+    is_read: bool = False
+    sender_name: str = ""
+
+
+class MessageForwardRequest(BaseModel):
+    recipient_ids: List[int] = []
+    thread_id: Optional[int] = None
+
+
+class ConversationRead(BaseModel):
+    thread: MessageThreadRead
+    participants: List[dict] = []
+    last_message: Optional[MessageRead] = None
+    unread_count: int = 0

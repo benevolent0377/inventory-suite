@@ -7,6 +7,8 @@ import UserPicker from "./components/user/UserPicker";
 import UserGate from "./components/user/UserGate";
 import Notifier from "./components/notify/Notifier";
 import SearchPage from "./pages/Search";
+import MailButton from "./components/mail/MailButton";
+import MailPopup from "./components/mail/MailPopup";
 import { useTheme } from "./theme/useTheme";
 import { Cog, DoorOpen, HelpCircle, Power } from "lucide-react";
 import { StatusDropdown } from "./components/status/StatusDropdown";
@@ -44,6 +46,7 @@ function AppFrame() {
   const { theme } = useTheme();
   const navigate = useNavigate();
   const [helpOpen, setHelpOpen] = useState(false);
+  const [mailOpen, setMailOpen] = useState(false);
   const [loginReminder, setLoginReminder] = useState(() => {
     if (sessionStorage.getItem("inventory-login-reminder") === "1") {
       sessionStorage.removeItem("inventory-login-reminder");
@@ -114,6 +117,7 @@ function AppFrame() {
         >
           <Power size={16} />
         </button>
+        <MailButton onClick={() => setMailOpen(true)} />
         <div className="bottom-bar-center">Boethius Solutions LLC. 2026</div>
         <div className="bottom-bar-actions">
           <StatusDropdown />
@@ -128,6 +132,7 @@ function AppFrame() {
           </button>
         </div>
       </div>
+      <MailPopup isOpen={mailOpen} onClose={() => setMailOpen(false)} />
       {helpOpen && (
         <div className="help-overlay" role="dialog" aria-modal="true" onClick={(e) => { if (e.target === e.currentTarget) setHelpOpen(false); }}>
           <div className="help-card">

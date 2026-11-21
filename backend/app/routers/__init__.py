@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 
-from app.routers import activity, auth, health, help, logistics, maintenance, movements, orders, products, requests, search, stock, table_editor, users, vendors
+from app.routers import activity, auth, health, help, logistics, maintenance, messages, movements, orders, products, requests, search, stock, table_editor, users, vendors
 
 
 def register_routers(app: FastAPI):
@@ -18,4 +18,5 @@ def register_routers(app: FastAPI):
     app.include_router(search.router, prefix="/api")
     app.include_router(help.router, prefix="/api")
     app.include_router(users.router, prefix="/api")
+    app.include_router(messages.router, prefix="/api")
     app.include_router(maintenance.router, prefix="/api")
