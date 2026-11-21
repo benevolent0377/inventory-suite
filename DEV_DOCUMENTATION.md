@@ -43,7 +43,7 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-The backend database defaults to `backend/data/inventory.db`. Set `INVENTORY_DB_PATH` before starting the server to use a different SQLite file. The first server start creates the schema, performs lightweight additive schema updates for older databases, bootstraps the administrator, and prints a temporary admin passkey. The local TLS certificate is generated under the database directory's `certs/` folder.
+The backend database defaults to `backend/data/inventory.db`. Set `INVENTORY_DB_PATH` before starting the server to use a different SQLite file. The first server start creates the schema, performs lightweight additive schema updates for older databases, bootstraps the administrator, and prints a temporary admin passkey. If a demo database exists, it receives the same admin passkey so the credential does not change when switching databases. The local TLS certificate is generated under the database directory's `certs/` folder.
 
 ### Frontend development server
 
@@ -111,9 +111,9 @@ When adding a new mutation, use the existing pattern: `await request("/api/...",
 
 ### Authentication and authorization
 
-Registration and login are public API operations. Login creates a random opaque bearer token, but only its SHA-256 hash is persisted in `user_sessions`; the raw token is stored by the browser. Passkeys are stored as salted scrypt hashes. Tokens expire after 12 hours. `require_user` and `require_admin` are FastAPI dependencies for routes that require an authenticated user or admin.
+Login is a public API operation; registration (`POST /api/auth/register`) is restricted to administrators via `require_admin`. Login creates a random opaque bearer token, but only its SHA-256 hash is persisted in `user_sessions`; the raw token is stored by the browser. Passkeys are stored as salted scrypt hashes. Tokens expire after 12 hours. `require_user` and `require_admin` are FastAPI dependencies for routes that require an authenticated user or admin.
 
-The middleware in `backend/app/main.py` selects the database for each request, rejects unauthenticated API writes (except register/login), and records authenticated writes in the activity log. Router dependencies remain the clearest way to express endpoint-specific read/admin access.
+The middleware in `backend/app/main.py` selects the database for each request, rejects unauthenticated API writes (except login), and records authenticated writes in the activity log. Router dependencies remain the clearest way to express endpoint-specific read/admin access.
 
 ### Demo database routing
 
@@ -185,21 +185,21 @@ API routers are mounted under `/api` except the health checks. Payload/response 
 | `GET /api/tables/{table}?limit=&offset=` | `table_editor.read_table` | Admin-only paginated table data. |
 | `PATCH /api/tables/{table}/{row_id}` | `table_editor.update_row` | Admin-only update of non-primary-key columns. |
 | `DELETE /api/tables/{table}/{row_id}` | `table_editor.delete_row` | Admin-only row deletion. |
-| `POST /api/auth/register` | `auth.register` | Public account creation and session issue. |
+| `POST /api/auth/register` | `auth.register` | Admin-only account creation. The admin stays logged in; the endpoint returns the new user's token but the Settings UI does not switch sessions. |
 | `POST /api/auth/login` | `auth.login` | Public passkey login and session issue. |
 | `GET /api/auth/me` | `auth.me` | Return current authenticated user. |
 | `POST /api/auth/change-passkey` | `auth.change_passkey` | Change current user's passkey. |
 | `POST /api/auth/users/{id}/passkey` | `auth.reset_passkey` | Admin resets another user's passkey. |
 | `POST /api/auth/logout` | `auth.logout` | Revoke the bearer session. |
 | `PATCH /api/auth/users/{id}/admin` | `auth.set_admin` | Admin changes a user's admin flag. |
-| `POST /api/auth/verify-passkey` | `auth.verify_admin_passkey` | Verify the authenticated administrator's passkey. |
+| `POST /api/auth/verify-passkey` | `auth.verify_admin_passkey` | Verify the authenticated administrator's passkey. Returns 403 (not 401) for a wrong passkey so the frontend does not clear the user's session. |
 | `GET /api/users` | `users.list_users` | List user profiles. |
 | `POST /api/users` | `users.create_user` | Admin creates a profile. |
 | `PUT /api/users/{id}` | `users.update_user` | User updates own profile; admins may update another profile. |
 | `DELETE /api/users/{id}` | `users.delete_user` | Admin deletes a user. |
 | `GET /api/help` | `help.help_text` | Return generated CLI usage text. |
 | `POST /api/maintenance/tables/clear` | `maintenance.clear_tables` | Admin clears selected tables after a database backup. |
-| `POST /api/maintenance/shutdown` | `maintenance.shutdown` | Verify admin passkey, revoke sessions and terminate service. |
+| `POST /api/maintenance/shutdown` | `maintenance.shutdown` | Verify admin passkey, revoke sessions and terminate service. Returns 403 for a wrong passkey. |
 
 `backend/app/main.py` has a catch-all SPA route after API registration. Keep new API routers under `/api` so SPA fallback does not intercept them.
 
@@ -274,7 +274,7 @@ This module contains Pydantic request/response DTOs and no custom functions. `Pr
 
 ### `backend/app/main.py`
 
-- `_bootstrap_admin(demo=False, passkey=None)` — Ensure an admin user exists for the selected database, set its hashed passkey and return the key used for bootstrap.
+- `_bootstrap_admin(demo=False, passkey=None)` — Ensure an admin user exists for the selected database, set its hashed passkey and return the key used for bootstrap. The normal and demo databases are bootstrapped with the same generated passkey so switching database mode does not require a different admin credential.
 - `require_auth_and_audit(request, call_next)` — Middleware that selects the request database, guards API writes, audits authenticated writes, and resets database context on completion.
 - `SPAStaticFiles.get_response(path, scope)` — StaticFiles subclass override that would serve the SPA for missing assets; the current app uses the explicit `spa_fallback` route instead.
 - `spa_fallback(full_path)` — Return a requested built asset when present, otherwise return `frontend/dist/index.html` for client-side routes.
@@ -370,7 +370,7 @@ This module contains Pydantic request/response DTOs and no custom functions. `Pr
 
 `backend/app/routers/auth.py`:
 
-- `register(payload, db)` — Validate a new account, store a passkey hash, audit registration and issue a session.
+- `register(payload, db, admin)` — Validate a new account, store a passkey hash, audit registration and issue a session. Requires an admin dependency.
 - `login(payload, db)` — Verify username/passkey, audit success/failure and return a new session token.
 - `me(user)` — Return the authenticated user's public profile or 401.
 - `change_passkey(payload, db, user)` — Validate current/new passkeys, update the hash/timestamp and audit the change.
@@ -501,10 +501,9 @@ This catalog covers every named function/component in `frontend/src/`. Anonymous
 
 `frontend/src/components/user/UserGate.jsx`:
 
-- `UserGate()` — Render login/register overlay when there is no stored bearer token.
+- `UserGate()` — Render login overlay when there is no stored bearer token.
 - `finishSession(data)` — Store auth token/profile, announce login, display welcome notice and navigate to dashboard.
 - `handleLogin(event)` — Submit credentials and pass a successful response to `finishSession`.
-- `handleRegister(event)` — Submit account fields and pass a successful response to `finishSession`.
 
 `frontend/src/components/user/AdminPasskeyGate.jsx`:
 
@@ -642,8 +641,9 @@ This catalog covers every named function/component in `frontend/src/`. Anonymous
 
 `frontend/src/pages/Settings.jsx`:
 
-- `SettingsPage()` — Render appearance, accessibility, account and demo-database preferences.
+- `SettingsPage()` — Render appearance, accessibility, account, user-management (admin only) and demo-database preferences.
 - `handleChangePasskey(event)` — Submit old/new passkey values, clear form state on success and show errors otherwise.
+- `handleAddUser(event)` — Submit new-account fields to `/api/auth/register`, keep the admin session active, clear the form and hide it on success.
 
 `frontend/src/pages/TableEditor.jsx`:
 
@@ -726,6 +726,7 @@ There is no `backend/tests/` suite in this repository at the time this guide was
 | --- | --- |
 | Browser reports API network failure | Confirm backend is on HTTPS port 8000; confirm Vite proxy target and local certificate trust. |
 | API returns 401 unexpectedly | Check `inventory-token`, request's `Authorization` header and the token's 12-hour session expiry. A 401 clears local frontend session state. |
+| Entering the wrong admin passkey on Activity/Table Editor logs me out | `POST /api/auth/verify-passkey` returns 403 for an incorrect passkey. If you are still being logged out, confirm the frontend build is current. |
 | Data differs in demo mode | Inspect `inventory-demo-db` in local storage and `X-Demo-DB` in the request; selected database is isolated per request context. |
 | Frontend shows stale GET data briefly | GET responses are cached in session storage for up to 30 seconds; mutations clear that cache. |
 | A new database field is absent on a user's database | Ensure `ensure_schema()` adds/backfills it safely or run a deliberate migration. |

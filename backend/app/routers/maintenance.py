@@ -89,7 +89,7 @@ def shutdown(payload: ShutdownRequest, user=Depends(require_user)):
     try:
         admins = db.query(models.User).filter(models.User.is_admin.is_(True)).all()
         if not any(verify_passkey(payload.admin_passkey, admin.passkey_hash) for admin in admins):
-            raise HTTPException(status_code=401, detail="Invalid administrator passkey")
+            raise HTTPException(status_code=403, detail="Invalid administrator passkey")
         db.query(models.UserSession).delete()
         db.commit()
     finally:

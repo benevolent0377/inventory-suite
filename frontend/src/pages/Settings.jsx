@@ -33,6 +33,24 @@ export default function SettingsPage() {
   const [currentPasskey, setCurrentPasskey] = useState("");
   const [newPasskey, setNewPasskey] = useState("");
 
+  const [isAdmin] = useState(() => {
+    const user = localStorage.getItem("inventory-user");
+    if (user) {
+      try {
+        return JSON.parse(user)?.is_admin === true;
+      } catch {
+        return false;
+      }
+    }
+    return false;
+  });
+  const [showAddUser, setShowAddUser] = useState(false);
+  const [addUserName, setAddUserName] = useState("");
+  const [addUserUsername, setAddUserUsername] = useState("");
+  const [addUserEmail, setAddUserEmail] = useState("");
+  const [addUserPasskey, setAddUserPasskey] = useState("");
+  const [addUserLoading, setAddUserLoading] = useState(false);
+
   useEffect(() => {
     document.documentElement.dataset.layoutDensity = layoutDensity;
     localStorage.setItem("inventory-layout-density", layoutDensity);
@@ -56,6 +74,33 @@ export default function SettingsPage() {
       setNewPasskey("");
     } catch (err) {
       setError(err.message);
+    }
+  }
+
+  async function handleAddUser(event) {
+    event.preventDefault();
+    setError("");
+    setAddUserLoading(true);
+    try {
+      await request("/api/auth/register", {
+        method: "POST",
+        body: JSON.stringify({
+          name: addUserName,
+          username: addUserUsername,
+          email: addUserEmail,
+          passkey: addUserPasskey,
+        }),
+      });
+      notify(`User ${addUserUsername} created`);
+      setAddUserName("");
+      setAddUserUsername("");
+      setAddUserEmail("");
+      setAddUserPasskey("");
+      setShowAddUser(false);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setAddUserLoading(false);
     }
   }
 
@@ -122,6 +167,61 @@ export default function SettingsPage() {
           <button type="submit">Update Passkey</button>
         </form>
       </section>
+
+      {isAdmin && (
+        <section className="settings-section">
+          <h3>User Management</h3>
+          {!showAddUser ? (
+            <button type="button" onClick={() => setShowAddUser(true)}>
+              Add User
+            </button>
+          ) : (
+            <form onSubmit={handleAddUser}>
+              <label>
+                Name
+                <input value={addUserName} onChange={(event) => setAddUserName(event.target.value)} required />
+              </label>
+              <label>
+                Username
+                <input value={addUserUsername} onChange={(event) => setAddUserUsername(event.target.value)} required />
+              </label>
+              <label>
+                Email
+                <input value={addUserEmail} onChange={(event) => setAddUserEmail(event.target.value)} />
+              </label>
+              <label>
+                Passkey
+                <input
+                  type="password"
+                  value={addUserPasskey}
+                  onChange={(event) => setAddUserPasskey(event.target.value)}
+                  required
+                  minLength={8}
+                />
+              </label>
+              <div className="form-actions">
+                <button type="submit" disabled={addUserLoading}>
+                  {addUserLoading ? "Creating..." : "Create User"}
+                </button>
+                <button
+                  type="button"
+                  className="secondary"
+                  onClick={() => {
+                    setShowAddUser(false);
+                    setAddUserName("");
+                    setAddUserUsername("");
+                    setAddUserEmail("");
+                    setAddUserPasskey("");
+                    setError("");
+                  }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          )}
+        </section>
+      )}
 
       <section className="settings-section">
         <h3>Data & Testing</h3>

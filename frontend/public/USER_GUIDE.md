@@ -5,7 +5,7 @@ Inventory Suite helps you maintain products, vendors, stock, purchasing orders, 
 ## Sign in and navigate
 
 1. Open the Inventory Suite address provided by your administrator.
-2. Sign in with your username and passkey. If you do not have an account, choose **Need an account? Register** and create one. Passkeys must be at least eight characters.
+2. Sign in with your username and passkey. If you do not have an account, ask an administrator to create one for you. Passkeys must be at least eight characters.
 3. Use the left sidebar to open **Dashboard**, **Products**, **Vendors**, **Orders**, or **CLI**. Administrators also see **Activity** and **Table Editor**.
 4. Use the search box in the sidebar to search across products, vendors, orders, and logistics. Choose a source to narrow the search.
 5. The bottom bar contains status, log out, settings, and shutdown controls. Log out when you finish using a shared device.
@@ -56,7 +56,7 @@ Search from the sidebar or open the Search page. Enter a term and choose **All S
 
 ## Settings and account
 
-Select the gear in the bottom bar to open **Settings**. You can change the theme, text size, layout density, and motion preference. In **Account**, enter your current and new passkey to update it.
+Select the gear in the bottom bar to open **Settings**. You can change the theme, text size, layout density, and motion preference. In **Account**, enter your current and new passkey to update it. Administrators also see a **User Management** section for adding new user accounts.
 
 The **Use demo database** option is intended for testing. Changing it takes effect after reloading the page. Confirm that you are on the intended database before making changes.
 

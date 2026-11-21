@@ -57,7 +57,7 @@ TokenResponse.model_rebuild()
 
 
 @router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
-def register(payload: RegisterRequest, db: Session = Depends(get_db)):
+def register(payload: RegisterRequest, db: Session = Depends(get_db), admin=Depends(require_admin)):
     if len(payload.passkey) < 8:
         raise HTTPException(status_code=400, detail="Passkey must be at least 8 characters")
     if db.query(models.User).filter(models.User.username == payload.username).first():
@@ -163,5 +163,5 @@ def set_admin(user_id: int, payload: AdminFlagRequest, db: Session = Depends(get
 @router.post("/verify-passkey")
 def verify_admin_passkey(payload: PasskeyVerifyRequest, db: Session = Depends(get_db), admin=Depends(require_admin)):
     if not verify_passkey(payload.passkey, admin.passkey_hash):
-        raise HTTPException(status_code=401, detail="Invalid passkey")
+        raise HTTPException(status_code=403, detail="Invalid passkey")
     return {"status": "verified"}

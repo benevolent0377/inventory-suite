@@ -7,7 +7,7 @@ Use this guide to resolve common issues. If an issue persists, contact the perso
 ### I cannot sign in
 
 - Confirm the username and passkey are entered correctly. Passkeys are case-sensitive.
-- If you do not have an account, select **Need an account? Register** on the sign-in panel.
+- If you do not have an account, ask an administrator to create one. Registration is no longer available from the sign-in panel.
 - If your passkey is forgotten, ask an administrator to reset it. The application does not display stored passkeys.
 - If the server is unavailable for everyone, ask the server operator to check that the backend is running.
 

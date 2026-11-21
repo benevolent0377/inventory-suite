@@ -44,7 +44,7 @@ cd frontend
 npm run build
 ```
 
-Then run the backend. Clients should open `https://<host-ip>:8000`. The first backend run prints a temporary admin passkey and TLS certificate fingerprint. All other users self-register; activity logs are admin-only.
+Then run the backend. Clients should open `https://<host-ip>:8000`. The first backend run prints a temporary admin passkey and TLS certificate fingerprint. The admin account must create all other user accounts from **Settings → User Management**; self-registration from the sign-in panel is disabled.
 
 The frontend uses `/api` routes and is configured for Vite's dev proxy in development. SQLite stores data at `backend/data/inventory.db`, and writes are protected by per-request sessions, WAL mode, and a 30 second busy timeout.
 EOF

@@ -57,10 +57,10 @@ def _bootstrap_admin(demo=False, passkey=None):
 admin_key = _bootstrap_admin(False)
 import os
 # The normal database gets a fresh random passkey on every server start. The
-# demo database is for testing, so it uses a fixed credential (`admin`) that is
-# predictable for anyone evaluating the application.
+# demo database uses the same admin passkey so that switching between databases
+# does not require a different credential. Both hashes are updated each restart.
 if os.path.exists(DEMO_DB_PATH):
-    _bootstrap_admin(True, passkey="admin")
+    _bootstrap_admin(True, passkey=admin_key)
 
 app = FastAPI(title="Inventory Suite API")
 
@@ -85,7 +85,7 @@ async def require_auth_and_audit(request, call_next):
 
     path = request.url.path
     method = request.method.upper()
-    public_auth = {"/api/auth/register", "/api/auth/login"}
+    public_auth = {"/api/auth/login"}
     if method in {"POST", "PUT", "PATCH", "DELETE"} and path.startswith("/api/") and path not in public_auth:
         token = None
         auth_header = request.headers.get("Authorization", "")
@@ -104,7 +104,7 @@ async def require_auth_and_audit(request, call_next):
     path = request.url.path
     method = request.method.upper()
     write_methods = {"POST", "PUT", "PATCH", "DELETE"}
-    public_auth = {"/api/auth/register", "/api/auth/login"}
+    public_auth = {"/api/auth/login"}
     if (method in write_methods and path.startswith("/api/")
             and path not in public_auth):
         db = SessionLocal()
