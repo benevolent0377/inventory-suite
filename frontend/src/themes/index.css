@@ -1333,7 +1333,6 @@ button {
   place-items: center;
   display: grid;
   cursor: pointer;
-  margin-right: 8px;
 }
 
 .bottom-mail:hover {
@@ -1352,8 +1351,11 @@ button {
   color: var(--accent-contrast, var(--text));
   font-size: 0.65rem;
   font-weight: 700;
-  display: grid;
-  place-items: center;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
 }
 
 .mail-overlay {
@@ -1447,6 +1449,7 @@ button {
   font-weight: 600;
   font-size: 0.88rem;
   color: var(--heading);
+  text-align: left;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1469,6 +1472,7 @@ button {
   display: block;
   font-size: 0.78rem;
   color: var(--muted);
+  text-align: left;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1489,10 +1493,49 @@ button {
   background: var(--panel-strong);
 }
 
-.mail-thread-header h3 {
+.mail-thread-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.mail-thread-title h3 {
   margin: 0;
   font-size: 1rem;
   color: var(--heading);
+}
+
+.mail-thread-title button {
+  font-size: 0.75rem;
+  padding: 4px 10px;
+}
+
+.mail-rename-form {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mail-rename-form input {
+  flex: 1;
+  padding: 6px 10px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--panel);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.9rem;
+}
+
+.mail-rename-form input:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.mail-rename-form button {
+  font-size: 0.75rem;
+  padding: 5px 10px;
 }
 
 .mail-messages {
@@ -1615,6 +1658,7 @@ button {
 .mail-compose textarea {
   flex: 1;
   resize: none;
+  min-height: 100px;
   padding: 10px 12px;
   border-radius: var(--radius);
   border: 1px solid var(--border);
@@ -2035,6 +2079,11 @@ textarea:focus {
   right: 76px;
 }
 
+.login-reminder-mail {
+  bottom: 48px;
+  right: 108px;
+}
+
 .login-reminder-arrow {
   position: absolute;
   bottom: -9px;
@@ -2050,6 +2099,10 @@ textarea:focus {
 }
 
 .login-reminder-arrow-logout {
+  right: 16px;
+}
+
+.login-reminder-arrow-mail {
   right: 16px;
 }
 

@@ -4,11 +4,17 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
+from pydantic import BaseModel
+
 from .. import models, schemas
 from ..auth import require_user
 from ..db import get_db
 
 router = APIRouter(prefix="/messages", tags=["messages"])
+
+
+class ThreadRenameRequest(BaseModel):
+    name: str
 
 
 def _participant_ids(db: Session, thread_id: int) -> set[int]:
@@ -181,6 +187,26 @@ def get_thread_messages(thread_id: int, db: Session = Depends(get_db), user=Depe
         .all()
     )
     return [_serialize_message(db, m, user.id) for m in messages]
+
+
+@router.patch("/threads/{thread_id}", response_model=schemas.MessageThreadRead)
+def rename_thread(
+    thread_id: int,
+    payload: ThreadRenameRequest,
+    db: Session = Depends(get_db),
+    user=Depends(require_user),
+):
+    thread = db.get(models.MessageThread, thread_id)
+    if not thread:
+        raise HTTPException(status_code=404, detail="Thread not found")
+    participant_ids = _participant_ids(db, thread_id)
+    if user.id not in participant_ids:
+        raise HTTPException(status_code=403, detail="Access denied")
+    thread.name = payload.name
+    db.add(thread)
+    db.commit()
+    db.refresh(thread)
+    return schemas.MessageThreadRead.model_validate(thread)
 
 
 @router.get("/unread-count")

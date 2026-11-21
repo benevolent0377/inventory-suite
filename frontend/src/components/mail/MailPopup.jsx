@@ -13,6 +13,8 @@ export default function MailPopup({ isOpen, onClose }) {
   const [newMessageOpen, setNewMessageOpen] = useState(false);
   const [replyingTo, setReplyingTo] = useState(null);
   const [forwarding, setForwarding] = useState(null);
+  const [renaming, setRenaming] = useState(false);
+  const [renameValue, setRenameValue] = useState("");
   const messagesEndRef = useRef(null);
   const currentUser = JSON.parse(localStorage.getItem("inventory-user") || "{}");
 
@@ -119,6 +121,28 @@ export default function MailPopup({ isOpen, onClose }) {
     setForwarding((prev) => (prev ? { ...prev, recipient_ids: recipientIds } : null));
   }
 
+  async function handleRename() {
+    if (!selectedThreadId || !renameValue.trim()) return;
+    try {
+      await request(`/api/messages/threads/${selectedThreadId}`, {
+        method: "PATCH",
+        body: JSON.stringify({ name: renameValue.trim() }),
+      });
+      setRenaming(false);
+      loadConversations();
+      notify("Chat renamed");
+    } catch (err) {
+      notify(err.message);
+    }
+  }
+
+  function startRename() {
+    const conv = conversations.find((c) => c.thread.id === selectedThreadId);
+    const currentName = conv?.thread?.name || "";
+    setRenameValue(currentName);
+    setRenaming(true);
+  }
+
   const selectedThread = conversations.find((c) => c.thread.id === selectedThreadId);
 
   if (!isOpen) return null;
@@ -171,9 +195,28 @@ export default function MailPopup({ isOpen, onClose }) {
             {selectedThread ? (
               <>
                 <div className="mail-thread-header">
-                  <h3>
-                    {selectedThread.thread.name || selectedThread.participants.filter((p) => p.id !== currentUser.id).map((p) => p.name).join(", ") || "Me"}
-                  </h3>
+                  {renaming ? (
+                    <form
+                      className="mail-rename-form"
+                      onSubmit={(e) => { e.preventDefault(); handleRename(); }}
+                    >
+                      <input
+                        value={renameValue}
+                        onChange={(e) => setRenameValue(e.target.value)}
+                        placeholder="Chat name"
+                        autoFocus
+                      />
+                      <button type="submit">Save</button>
+                      <button type="button" className="secondary" onClick={() => setRenaming(false)}>Cancel</button>
+                    </form>
+                  ) : (
+                    <div className="mail-thread-title">
+                      <h3>
+                        {selectedThread.thread.name || selectedThread.participants.filter((p) => p.id !== currentUser.id).map((p) => p.name).join(", ") || "Me"}
+                      </h3>
+                      <button type="button" className="secondary" onClick={startRename}>Rename</button>
+                    </div>
+                  )}
                 </div>
 
                 <div className="mail-messages">
@@ -276,11 +319,23 @@ function ComposeArea({ onSend, replyingTo, forwarding, onCancelReply, onCancelFo
   function handleSubmit(event) {
     event.preventDefault();
     if (forwarding) {
+      if (!forwardRecipients.length) return;
       onSubmitForward(forwardRecipients);
       setForwardRecipients([]);
+      onSend("");
+      return;
     }
     onSend(text);
     setText("");
+  }
+
+  function handleKeyDown(event) {
+    if (event.key === "Enter" && !event.shiftKey) {
+      event.preventDefault();
+      if (text.trim()) {
+        handleSubmit(event);
+      }
+    }
   }
 
   if (forwarding) {
@@ -319,7 +374,8 @@ function ComposeArea({ onSend, replyingTo, forwarding, onCancelReply, onCancelFo
         <textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder={replyingTo ? "Write a reply..." : "Type a message..."}
+          onKeyDown={handleKeyDown}
+          placeholder={replyingTo ? "Write a reply... (Enter to send, Shift+Enter for new line)" : "Type a message... (Enter to send, Shift+Enter for new line)"}
           rows={2}
           required
         />

@@ -61,6 +61,10 @@ function AppFrame() {
       return () => window.clearTimeout(timer);
     }
     if (loginReminder === "logout") {
+      const timer = window.setTimeout(() => setLoginReminder("mail"), 5000);
+      return () => window.clearTimeout(timer);
+    }
+    if (loginReminder === "mail") {
       const timer = window.setTimeout(() => setLoginReminder(null), 5000);
       return () => window.clearTimeout(timer);
     }
@@ -117,10 +121,10 @@ function AppFrame() {
         >
           <Power size={16} />
         </button>
-        <MailButton onClick={() => setMailOpen(true)} />
         <div className="bottom-bar-center">Boethius Solutions LLC. 2026</div>
         <div className="bottom-bar-actions">
           <StatusDropdown />
+          <MailButton onClick={() => setMailOpen(true)} />
           <button type="button" className="bottom-logout" onClick={async () => { if (!(await confirm("Log out?"))) return; localStorage.removeItem("inventory-user"); localStorage.removeItem("inventory-token"); window.location.assign("/"); }} title="Log out">
             <DoorOpen size={16} />
           </button>
@@ -171,7 +175,9 @@ function AppFrame() {
         <div className={`login-reminder login-reminder-${loginReminder}`} role="status" aria-live="polite">
           {loginReminder === "settings"
             ? "Adjust your preferences from the settings cog in the bottom bar."
-            : "Remember to log out using the logout button when you are finished."}
+            : loginReminder === "logout"
+            ? "Remember to log out using the logout button when you are finished."
+            : "Use the mail icon to send messages to other users."}
           <span className={`login-reminder-arrow login-reminder-arrow-${loginReminder}`} />
         </div>
       )}
