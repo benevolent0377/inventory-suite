@@ -101,6 +101,19 @@ def ensure_schema(engine=None):
                     text(f'ALTER TABLE "{table.name}" ADD COLUMN "{column.name}" {raw_type}')
                 )
     # Backfill values required by application code for older databases.
+    if inspector.has_table("order_items"):
+        with engine.begin() as connection:
+            columns = {column["name"] for column in inspector.get_columns("order_items")}
+            if "processed" in columns:
+                connection.execute(text("UPDATE order_items SET processed = 0 WHERE processed IS NULL"))
+            if "checked_in_by" in columns:
+                connection.execute(text("UPDATE order_items SET checked_in_by = '' WHERE checked_in_by IS NULL"))
+            if "checked_in_at" in columns:
+                connection.execute(text("UPDATE order_items SET checked_in_at = NULL WHERE checked_in_at IS NULL"))
+            if "processed_by" in columns:
+                connection.execute(text("UPDATE order_items SET processed_by = '' WHERE processed_by IS NULL"))
+            if "processed_at" in columns:
+                connection.execute(text("UPDATE order_items SET processed_at = NULL WHERE processed_at IS NULL"))
     if inspector.has_table("products"):
         with engine.begin() as connection:
             columns = {column["name"] for column in inspector.get_columns("products")}
@@ -119,6 +132,10 @@ def ensure_schema(engine=None):
                 connection.execute(text("UPDATE users SET email = '' WHERE email IS NULL"))
             if "is_admin" in columns:
                 connection.execute(text("UPDATE users SET is_admin = 0 WHERE is_admin IS NULL"))
+            if "failed_login_attempts" in columns:
+                connection.execute(text("UPDATE users SET failed_login_attempts = 0 WHERE failed_login_attempts IS NULL"))
+            if "locked_at" in columns:
+                connection.execute(text("UPDATE users SET locked_at = NULL WHERE locked_at IS NULL"))
 
 
 def get_db():

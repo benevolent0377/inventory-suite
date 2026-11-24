@@ -61,20 +61,37 @@ export default function MailPopup({ isOpen, onClose }) {
     }
   }, [messages]);
 
-  async function handleSend(body) {
-    if (!body.trim()) return;
+  async function handleSend(body, forwardRecipientIds) {
+    if (!forwarding && !body.trim()) return;
     try {
       if (forwarding) {
+        const original = forwarding.originalMessage || {};
+        const time = original.created_at
+          ? new Date(original.created_at).toLocaleString()
+          : new Date().toLocaleString();
+        const location = forwarding.originalThreadName
+          || (forwarding.originalParticipants?.length
+            ? forwarding.originalParticipants.filter((p) => p.id !== currentUser.id).map((p) => p.name).join(", ")
+            : "");
+        const prefix = location
+          ? `Forwarded from ${original.sender_name || "Unknown"} in ${location} at ${time}:`
+          : `Forwarded from ${original.sender_name || "Unknown"} at ${time}:`;
+        const fullBody = body.trim()
+          ? `${prefix}\n${original.body || ""}\n\n${body.trim()}`
+          : `${prefix}\n${original.body || ""}`;
         await request(`/api/messages/${forwarding.id}/forward`, {
           method: "POST",
-          body: JSON.stringify({ recipient_ids: forwarding.recipient_ids }),
+          body: JSON.stringify({ recipient_ids: forwardRecipientIds || forwarding.recipient_ids, body: fullBody }),
         });
         setForwarding(null);
         notify("Message forwarded");
       } else if (replyingTo) {
+        const replyBody = body.trim().startsWith("@")
+          ? body.trim()
+          : `@${replyingTo.sender_name} ${body.trim()}`;
         await request(`/api/messages/${replyingTo.id}/reply`, {
           method: "POST",
-          body: JSON.stringify({ body: body.trim() }),
+          body: JSON.stringify({ body: replyBody }),
         });
         setReplyingTo(null);
       } else if (selectedThreadId) {
@@ -114,7 +131,9 @@ export default function MailPopup({ isOpen, onClose }) {
 
   function startForward(message) {
     setReplyingTo(null);
-    setForwarding({ id: message.id, recipient_ids: [] });
+    const originalThreadName = selectedThread?.thread?.name || "";
+    const originalParticipants = selectedThread?.participants || [];
+    setForwarding({ id: message.id, recipient_ids: [], originalThreadName, originalParticipants, originalMessage: message });
   }
 
   function submitForward(recipientIds) {
@@ -246,9 +265,11 @@ export default function MailPopup({ isOpen, onClose }) {
                                 <Mail size={12} />
                               </button>
                             )}
-                            <button type="button" onClick={() => { setReplyingTo(msg); setForwarding(null); }} title="Reply">
-                              <Reply size={12} />
-                            </button>
+                            {selectedThread?.thread?.is_group && (
+                              <button type="button" onClick={() => { setReplyingTo(msg); setForwarding(null); }} title="Reply">
+                                <Reply size={12} />
+                              </button>
+                            )}
                             <button type="button" onClick={() => startForward(msg)} title="Forward">
                               <Forward size={12} />
                             </button>
@@ -322,7 +343,7 @@ function ComposeArea({ onSend, replyingTo, forwarding, onCancelReply, onCancelFo
       if (!forwardRecipients.length) return;
       onSubmitForward(forwardRecipients);
       setForwardRecipients([]);
-      onSend("");
+      onSend("", forwardRecipients);
       return;
     }
     onSend(text);

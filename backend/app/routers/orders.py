@@ -5,6 +5,7 @@ from fastapi import APIRouter, Body, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from .. import models, schemas
+from ..auth import require_user
 from ..db import get_db
 
 router = APIRouter(prefix="/orders", tags=["orders"])
@@ -24,6 +25,11 @@ def build_order_read(order: models.Order, db: Session) -> schemas.OrderRead:
                 quantity=item.quantity,
                 expected_arrival_date=item.expected_arrival_date,
                 checked_in=item.checked_in,
+                checked_in_by=item.checked_in_by or "",
+                checked_in_at=item.checked_in_at,
+                processed=item.processed,
+                processed_by=item.processed_by or "",
+                processed_at=item.processed_at,
                 unit_cost=item.unit_cost,
             )
         )
@@ -122,6 +128,7 @@ def checkin_item(
     item_id: int,
     checked_in: bool = Body(..., embed=True),
     db: Session = Depends(get_db),
+    user=Depends(require_user),
 ):
     order = db.get(models.Order, order_id)
     if not order:
@@ -130,7 +137,7 @@ def checkin_item(
     if not item or item.order_id != order.id:
         raise HTTPException(status_code=404, detail="Order item not found")
 
-    previous = item.checked_in
+    previous_in_stock = item.processed and item.checked_in
     if checked_in:
         now = datetime.utcnow()
         expected = item.expected_arrival_date
@@ -138,14 +145,21 @@ def checkin_item(
             expected = expected.replace(tzinfo=None)
         if expected is None or expected < now:
             item.expected_arrival_date = now
+        item.checked_in_by = user.name or user.username or ""
+        item.checked_in_at = now
+    else:
+        item.checked_in_by = ""
+        item.checked_in_at = None
     item.checked_in = checked_in
+    new_in_stock = item.processed and item.checked_in
 
     delta = 0.0
     # Inventory changes only on a state transition, so retries/toggling do not
-    # apply the ordered quantity twice.
-    if checked_in and not previous:
+    # apply the ordered quantity twice. Stock is only added when an item is both
+    # processed and received.
+    if new_in_stock and not previous_in_stock:
         delta = item.quantity
-    elif previous and not checked_in:
+    elif previous_in_stock and not new_in_stock:
         delta = -item.quantity
 
     if delta:
@@ -159,7 +173,58 @@ def checkin_item(
                 stock.on_hand = 0
 
     all_items = db.query(models.OrderItem).filter(models.OrderItem.order_id == order.id).all()
-    order.fulfilled = bool(all_items) and all(i.checked_in for i in all_items)
+    order.fulfilled = bool(all_items) and all(i.processed and i.checked_in for i in all_items)
+    order.status = "fulfilled" if order.fulfilled else "open"
+
+    db.commit()
+    return build_order_read(order, db)
+
+
+@router.patch("/{order_id}/items/{item_id}/process", response_model=schemas.OrderRead)
+def process_item(
+    order_id: int,
+    item_id: int,
+    processed: bool = Body(..., embed=True),
+    db: Session = Depends(get_db),
+    user=Depends(require_user),
+):
+    order = db.get(models.Order, order_id)
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+    item = db.get(models.OrderItem, item_id)
+    if not item or item.order_id != order.id:
+        raise HTTPException(status_code=404, detail="Order item not found")
+
+    previous_in_stock = item.processed and item.checked_in
+    item.processed = processed
+    if processed:
+        item.processed_by = user.name or user.username or ""
+        item.processed_at = datetime.utcnow()
+    else:
+        item.processed_by = ""
+        item.processed_at = None
+    new_in_stock = item.processed and item.checked_in
+
+    delta = 0.0
+    # Toggling processed while received is checked adds or removes stock because
+    # stock is only counted when an item is both processed and received.
+    if new_in_stock and not previous_in_stock:
+        delta = item.quantity
+    elif previous_in_stock and not new_in_stock:
+        delta = -item.quantity
+
+    if delta:
+        stock = db.query(models.Stock).filter(models.Stock.product_id == item.product_id).first()
+        if not stock:
+            stock = models.Stock(product_id=item.product_id, on_hand=max(delta, 0), reserved=0)
+            db.add(stock)
+        else:
+            stock.on_hand += delta
+            if stock.on_hand < 0:
+                stock.on_hand = 0
+
+    all_items = db.query(models.OrderItem).filter(models.OrderItem.order_id == order.id).all()
+    order.fulfilled = bool(all_items) and all(i.processed and i.checked_in for i in all_items)
     order.status = "fulfilled" if order.fulfilled else "open"
 
     db.commit()

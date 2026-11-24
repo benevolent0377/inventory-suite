@@ -57,6 +57,8 @@ class UserRead(UserCreate):
 
     id: int
     is_admin: bool = False
+    failed_login_attempts: int = 0
+    locked_at: Optional[datetime] = None
     created_at: Optional[datetime] = None
 
 
@@ -107,6 +109,11 @@ class OrderItemRead(BaseModel):
     quantity: float
     expected_arrival_date: Optional[datetime] = None
     checked_in: bool = False
+    checked_in_by: str = ""
+    checked_in_at: Optional[datetime] = None
+    processed: bool = False
+    processed_by: str = ""
+    processed_at: Optional[datetime] = None
     unit_cost: float = 0
 
 
@@ -253,6 +260,7 @@ class MessageRead(BaseModel):
 class MessageForwardRequest(BaseModel):
     recipient_ids: List[int] = []
     thread_id: Optional[int] = None
+    body: Optional[str] = None
 
 
 class ConversationRead(BaseModel):

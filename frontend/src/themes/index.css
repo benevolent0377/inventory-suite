@@ -1974,6 +1974,7 @@ h3::after {
   border-radius: var(--radius);
   box-shadow: var(--shadow);
   padding: 12px 14px;
+  padding-bottom: 3px;
   color: var(--text);
   animation: fadeUp 0.2s ease, noticeFadeOut 0.4s ease 3.1s forwards;
 }

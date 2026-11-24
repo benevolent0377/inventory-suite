@@ -402,7 +402,7 @@ def forward_message(
 
     forwarded = []
     for thread in threads:
-        body = f"Forwarded: {original.body}"
+        body = payload.body if payload.body is not None else f"Forwarded: {original.body}"
         message = models.Message(
             thread_id=thread.id,
             sender_id=user.id,

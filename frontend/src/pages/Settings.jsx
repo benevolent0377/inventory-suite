@@ -27,7 +27,6 @@ const THEMES = [
 export default function SettingsPage() {
   const { theme, setTheme, textSize, setTextSize } = useTheme();
   const [error, setError] = useState("");
-  const [useDemoDb, setUseDemoDb] = useState(() => localStorage.getItem("inventory-demo-db") === "true");
   const [layoutDensity, setLayoutDensity] = useState(() => localStorage.getItem("inventory-layout-density") || "comfortable");
   const [reduceMotion, setReduceMotion] = useState(() => localStorage.getItem("inventory-reduce-motion") === "true");
   const [currentPasskey, setCurrentPasskey] = useState("");
@@ -50,6 +49,7 @@ export default function SettingsPage() {
   const [addUserEmail, setAddUserEmail] = useState("");
   const [addUserPasskey, setAddUserPasskey] = useState("");
   const [addUserLoading, setAddUserLoading] = useState(false);
+  const [users, setUsers] = useState([]);
 
   useEffect(() => {
     document.documentElement.dataset.layoutDensity = layoutDensity;
@@ -60,6 +60,13 @@ export default function SettingsPage() {
     document.documentElement.dataset.reduceMotion = reduceMotion ? "true" : "false";
     localStorage.setItem("inventory-reduce-motion", String(reduceMotion));
   }, [reduceMotion]);
+
+  useEffect(() => {
+    if (!isAdmin) return;
+    request("/api/users")
+      .then((data) => setUsers(data || []))
+      .catch((err) => setError(err.message));
+  }, [isAdmin]);
 
   async function handleChangePasskey(event) {
     event.preventDefault();
@@ -97,10 +104,24 @@ export default function SettingsPage() {
       setAddUserEmail("");
       setAddUserPasskey("");
       setShowAddUser(false);
+      const data = await request("/api/users");
+      setUsers(data || []);
     } catch (err) {
       setError(err.message);
     } finally {
       setAddUserLoading(false);
+    }
+  }
+
+  async function handleUnlockUser(userId) {
+    setError("");
+    try {
+      await request(`/api/auth/users/${userId}/unlock`, { method: "POST" });
+      notify("User unlocked");
+      const data = await request("/api/users");
+      setUsers(data || []);
+    } catch (err) {
+      setError(err.message);
     }
   }
 
@@ -220,39 +241,32 @@ export default function SettingsPage() {
               </div>
             </form>
           )}
+
+          <div className="user-list" style={{ marginTop: "1rem" }}>
+            <h4>Users</h4>
+            {users.length === 0 && <p className="muted">No users found.</p>}
+            {users.map((u) => {
+              const isLocked = Boolean(u.locked_at);
+              return (
+                <div key={u.id} className="user-list-row" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.5rem", padding: "0.5rem 0", borderBottom: "1px solid var(--border)" }}>
+                  <div>
+                    <strong>{u.name || u.username}</strong>
+                    {u.is_admin && <span className="badge" style={{ marginLeft: "0.5rem" }}>Admin</span>}
+                    {isLocked && (
+                      <span className="error" style={{ marginLeft: "0.5rem", fontSize: "0.85rem" }}>
+                        Locked ({u.failed_login_attempts || 0} attempts)
+                      </span>
+                    )}
+                  </div>
+                  {isLocked && !u.is_admin && (
+                    <button type="button" onClick={() => handleUnlockUser(u.id)}>Unlock</button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         </section>
       )}
-
-      <section className="settings-section">
-        <h3>Data & Testing</h3>
-        {/* The demo database and the normal database are completely isolated.
-            Demo mode is only for testing/sample data; toggling it switches which
-            SQLite file the backend reads from. The normal database starts empty
-            and should never be overwritten with demo data. */}
-        <label>
-          <input
-            type="checkbox"
-            checked={useDemoDb}
-            onChange={(event) => {
-              const next = event.target.checked;
-              setUseDemoDb(next);
-              if (next) localStorage.setItem("inventory-demo-db", "true");
-              else localStorage.removeItem("inventory-demo-db");
-              // A session token is only valid in the database where it was
-              // created. Switching databases requires logging out and reloading
-              // so all cached data uses the selected DB.
-              if (localStorage.getItem("inventory-token")) {
-                localStorage.removeItem("inventory-token");
-                localStorage.removeItem("inventory-user");
-                window.location.reload();
-                return;
-              }
-              notify(next ? "Demo database enabled. Reload the page to apply." : "Normal database enabled. Reload the page to apply.");
-            }}
-          />
-          {" "}Use demo database instead of the normal database for testing.
-        </label>
-      </section>
 
       {error && <p className="error">{error}</p>}
     </div>

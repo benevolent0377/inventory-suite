@@ -184,7 +184,37 @@ const [orderSort, setOrderSort] = useState("desc");
         body: JSON.stringify({ checked_in: nextChecked }),
       });
       await load();
-      notify(nextChecked ? "Item checked in; stock updated" : "Item checked out; stock updated");
+      if (nextChecked && item.processed) {
+        notify("Item received; stock updated");
+      } else if (nextChecked) {
+        notify("Item received; mark as processed to add to stock");
+      } else if (item.processed) {
+        notify("Item unreceived; stock updated");
+      } else {
+        notify("Item unreceived");
+      }
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  async function toggleProcessed(order, item) {
+    const nextProcessed = !item.processed;
+    try {
+      await request(`/api/orders/${order.id}/items/${item.id}/process`, {
+        method: "PATCH",
+        body: JSON.stringify({ processed: nextProcessed }),
+      });
+      await load();
+      if (nextProcessed && item.checked_in) {
+        notify("Item processed; stock updated");
+      } else if (nextProcessed) {
+        notify("Item marked as processed");
+      } else if (item.checked_in) {
+        notify("Item unprocessed; stock updated");
+      } else {
+        notify("Item unmarked as processed");
+      }
     } catch (err) {
       setError(err.message);
     }
@@ -382,9 +412,9 @@ const [orderSort, setOrderSort] = useState("desc");
             <span><strong>Tracking</strong> {order.tracking_number || "No tracking"}</span>
             <span><strong>Total</strong> {formatMoney(order.total_cost)}</span>
           </div>
-          <p className="order-hint">Checking an item adds its quantity to stock.</p>
+          <p className="order-hint">An item is only added to stock when both Processed and Received are checked.</p>
           <table className="data-table">
-            <thead><tr><th>Item</th><th>Vendor Item ID</th><th>Qty</th><th>Expected Arrival</th><th>Checked In</th></tr></thead>
+            <thead><tr><th>Item</th><th>Vendor Item ID</th><th>Qty</th><th>Expected Arrival</th><th>Processed</th><th>Received</th></tr></thead>
             <tbody>
               {order.items.map((item) => (
                  <tr key={item.id}>
@@ -393,7 +423,20 @@ const [orderSort, setOrderSort] = useState("desc");
                    <td>{item.quantity}</td>
                   <td>{item.expected_arrival_date ? item.expected_arrival_date.slice(0, 10) : "-"}</td>
                   <td>
-                    <input type="checkbox" checked={item.checked_in} onChange={() => toggleCheckin(order, item)} />
+                    <input
+                      type="checkbox"
+                      checked={item.processed}
+                      onChange={() => toggleProcessed(order, item)}
+                      title={item.processed ? `Processed by ${item.processed_by || "Unknown"} at ${item.processed_at ? new Date(item.processed_at).toLocaleString() : "-"}` : "Mark as processed"}
+                    />
+                  </td>
+                  <td>
+                    <input
+                      type="checkbox"
+                      checked={item.checked_in}
+                      onChange={() => toggleCheckin(order, item)}
+                      title={item.checked_in ? `Received by ${item.checked_in_by || "Unknown"} at ${item.checked_in_at ? new Date(item.checked_in_at).toLocaleString() : "-"}` : "Mark as received"}
+                    />
                   </td>
                 </tr>
               ))}

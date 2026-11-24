@@ -31,7 +31,11 @@ export default function UserGate() {
       });
       await finishSession(data);
     } catch (err) {
-      setError(err.message);
+      if (err.message.includes("locked") || err.message.includes("Contact an administrator")) {
+        setError("Account is locked. Contact an administrator to unlock it.");
+      } else {
+        setError(err.message);
+      }
     } finally {
       setLoading(false);
     }

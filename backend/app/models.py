@@ -46,6 +46,8 @@ class User(Base):
     passkey_hash = Column(String, nullable=True)
     passkey_updated_at = Column(DateTime, nullable=True)
     is_admin = Column(Boolean, default=False, nullable=False)
+    failed_login_attempts = Column(Integer, default=0)
+    locked_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, server_default=func.now())
 
 
@@ -96,6 +98,11 @@ class OrderItem(Base):
     quantity = Column(Float, default=1)
     expected_arrival_date = Column(DateTime, nullable=True)
     checked_in = Column(Boolean, default=False)
+    checked_in_by = Column(String, default="")
+    checked_in_at = Column(DateTime, nullable=True)
+    processed = Column(Boolean, default=False)
+    processed_by = Column(String, default="")
+    processed_at = Column(DateTime, nullable=True)
     unit_cost = Column(Float, default=0)
 
 

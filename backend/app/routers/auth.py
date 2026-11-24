@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy.orm import Session
@@ -9,6 +11,8 @@ from ..db import get_db
 from ..schemas import UserCreate
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+
+MAX_LOGIN_ATTEMPTS = 7
 
 
 class LoginRequest(BaseModel):
@@ -84,11 +88,37 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db), admin=Depe
 @router.post("/login", response_model=TokenResponse)
 def login(payload: LoginRequest, db: Session = Depends(get_db)):
     user = db.query(models.User).filter(models.User.username == payload.username).first()
-    if not user or not verify_passkey(payload.passkey, user.passkey_hash):
-        if user:
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid username or passkey")
+
+    # Admin accounts are exempt from lockout.
+    if not user.is_admin and user.locked_at:
+        raise HTTPException(status_code=403, detail="Account is locked. Contact an administrator.")
+
+    if not verify_passkey(payload.passkey, user.passkey_hash):
+        if not user.is_admin:
+            user.failed_login_attempts += 1
+            if user.failed_login_attempts >= MAX_LOGIN_ATTEMPTS:
+                user.locked_at = datetime.utcnow()
+                log_activity(
+                    db,
+                    "auth.lockout",
+                    user=user,
+                    status="failure",
+                    error=f"account locked after {user.failed_login_attempts} failed attempts",
+                )
+            else:
+                log_activity(db, "auth.login", user=user, status="failure", error="invalid passkey")
+            db.commit()
+        else:
             log_activity(db, "auth.login", user=user, status="failure", error="invalid passkey")
             db.commit()
         raise HTTPException(status_code=401, detail="Invalid username or passkey")
+
+    # Successful login resets any previous failed attempts.
+    if user.failed_login_attempts > 0 or user.locked_at:
+        user.failed_login_attempts = 0
+        user.locked_at = None
     token = issue_session(db, user)
     log_activity(db, "auth.login", user=user, status="success")
     db.commit()
@@ -131,6 +161,21 @@ def reset_passkey(user_id: int, payload: PasskeyResetRequest, db: Session = Depe
     log_activity(db, "auth.admin_reset_passkey", user=admin, entity_type="user", entity_id=user.id, detail=f"reset passkey for {user.username}", status="success")
     db.commit()
     return {"status": "reset"}
+
+
+@router.post("/users/{user_id}/unlock")
+def unlock_user(user_id: int, db: Session = Depends(get_db), admin=Depends(require_admin)):
+    user = db.get(models.User, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    if user.is_admin:
+        raise HTTPException(status_code=400, detail="Admin accounts cannot be locked")
+    user.failed_login_attempts = 0
+    user.locked_at = None
+    db.add(user)
+    log_activity(db, "auth.unlock", user=admin, entity_type="user", entity_id=user.id, detail=f"unlocked {user.username}", status="success")
+    db.commit()
+    return {"status": "unlocked"}
 
 
 @router.post("/logout")
